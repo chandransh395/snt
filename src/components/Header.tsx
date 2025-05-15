@@ -1,11 +1,16 @@
+
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { ThemeToggle } from "./ThemeToggle";
+import { useAuth } from "@/contexts/AuthContext";
+import { Button } from "@/components/ui/button";
+import { LogOut, User, ShieldCheck } from "lucide-react";
 
 const Header = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const location = useLocation();
+  const { user, isAdmin, signOut } = useAuth();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -56,11 +61,51 @@ const Header = () => {
               {item.name}
             </Link>
           ))}
+          
+          {!user ? (
+            <Link to="/auth">
+              <Button variant="outline" size="sm">
+                Login
+              </Button>
+            </Link>
+          ) : (
+            <div className="flex items-center space-x-2">
+              {isAdmin && (
+                <Link to="/admin">
+                  <Button variant="ghost" size="sm" className="px-2">
+                    <ShieldCheck className="h-4 w-4 mr-1" />
+                    <span className="sr-only md:not-sr-only">Admin</span>
+                  </Button>
+                </Link>
+              )}
+              <Button 
+                variant="ghost" 
+                size="sm"
+                className="px-2"
+                onClick={() => signOut()}
+              >
+                <LogOut className="h-4 w-4 mr-1" />
+                <span className="sr-only md:not-sr-only">Logout</span>
+              </Button>
+            </div>
+          )}
+          
           <ThemeToggle />
         </nav>
 
         {/* Mobile Navigation Toggle */}
         <div className="flex items-center md:hidden space-x-4">
+          {user && (
+            <Button 
+              variant="ghost" 
+              size="sm"
+              className="px-2"
+              onClick={() => signOut()}
+            >
+              <LogOut className="h-4 w-4" />
+              <span className="sr-only">Logout</span>
+            </Button>
+          )}
           <ThemeToggle />
           <button
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
@@ -122,6 +167,23 @@ const Header = () => {
                 {item.name}
               </Link>
             ))}
+            
+            {!user ? (
+              <Link to="/auth" className="w-full flex justify-center">
+                <Button className="w-32">Login</Button>
+              </Link>
+            ) : (
+              <>
+                {isAdmin && (
+                  <Link to="/admin" className="w-full flex justify-center">
+                    <Button variant="outline" className="w-32">
+                      <ShieldCheck className="h-4 w-4 mr-2" />
+                      Admin Panel
+                    </Button>
+                  </Link>
+                )}
+              </>
+            )}
           </div>
         </div>
       </div>
