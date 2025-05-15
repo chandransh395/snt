@@ -130,6 +130,29 @@ function addToRemoveQueue(toastId: string) {
 
 interface Toast extends Omit<ToasterToast, "id"> {}
 
+// Create a React context for toast state management
+const ToastContext = React.createContext<{
+  state: State;
+  dispatch: React.Dispatch<Action>;
+}>({
+  state: { toasts: [] },
+  dispatch: () => {},
+});
+
+// Create a provider to manage toast state
+export const ToastProvider = ({ children }: { children: React.ReactNode }) => {
+  const [state, dispatch] = React.useReducer(reducer, { toasts: [] });
+  
+  return (
+    <ToastContext.Provider value={{ state, dispatch }}>
+      {children}
+    </ToastContext.Provider>
+  );
+};
+
+// Global dispatch function (initialized as a no-op, will be overridden when context is used)
+let dispatch = (() => {}) as React.Dispatch<Action>;
+
 function toast({ ...props }: Toast) {
   const id = genId()
 
@@ -159,19 +182,25 @@ function toast({ ...props }: Toast) {
   }
 }
 
-type UseToastState = State & {
-  toast: typeof toast
-  dismiss: (toastId?: string) => void
+type UseToastState = {
+  toasts: ToasterToast[];
+  toast: typeof toast;
+  dismiss: (toastId?: string) => void;
 }
 
-const [state, dispatch] = React.createSignal<State>({ toasts: [] })
-
 function useToast(): UseToastState {
+  const { state, dispatch: contextDispatch } = React.useContext(ToastContext);
+  
+  // Update the global dispatch function to use the context dispatch
+  React.useEffect(() => {
+    dispatch = contextDispatch;
+  }, [contextDispatch]);
+  
   return {
-    ...state,
+    toasts: state.toasts,
     toast,
     dismiss: (toastId?: string) =>
-      dispatch({ type: actionTypes.DISMISS_TOAST, toastId }),
+      contextDispatch({ type: actionTypes.DISMISS_TOAST, toastId }),
   }
 }
 
