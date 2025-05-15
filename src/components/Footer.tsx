@@ -1,4 +1,3 @@
-
 import { Link } from "react-router-dom";
 
 const Footer = () => {
@@ -9,7 +8,7 @@ const Footer = () => {
       <div className="container mx-auto py-16 px-4">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           <div>
-            <h3 className="text-2xl font-playfair mb-6">Journey<span className="text-travel-gold">Glow</span></h3>
+            <h3 className="text-2xl font-playfair mb-6">Seeta<span className="text-travel-gold">Narayan</span></h3>
             <p className="text-gray-300 mb-6">
               Crafting unforgettable travel experiences that transform your journey into memories that last a lifetime.
             </p>
@@ -71,7 +70,7 @@ const Footer = () => {
                 <svg className="h-6 w-6 text-travel-gold flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                 </svg>
-                <span className="text-gray-300">info@journeyglow.com</span>
+                <span className="text-gray-300">info@seetanarayantravels.com</span>
               </div>
               <div className="flex items-start space-x-3">
                 <svg className="h-6 w-6 text-travel-gold flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -84,7 +83,7 @@ const Footer = () => {
         </div>
         
         <div className="border-t border-gray-700 mt-16 pt-8 flex flex-col md:flex-row justify-between items-center">
-          <p className="text-gray-400 text-sm">© {currentYear} JourneyGlow Travel Agency. All rights reserved.</p>
+          <p className="text-gray-400 text-sm">© {currentYear} Seeta Narayan Travels. All rights reserved.</p>
           <div className="mt-4 md:mt-0">
             <ul className="flex space-x-8">
               <li><a href="#" className="text-gray-400 text-sm hover:text-travel-gold transition-colors">Privacy Policy</a></li>

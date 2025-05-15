@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { ThemeToggle } from "./ThemeToggle";
@@ -40,7 +39,7 @@ const Header = () => {
       <div className="container mx-auto px-4 py-4 flex items-center justify-between">
         <Link to="/" className="z-10">
           <h1 className="text-2xl font-playfair font-bold tracking-wider">
-            Journey<span className="text-travel-gold">Glow</span>
+            Seeta<span className="text-travel-gold">Narayan</span>
           </h1>
         </Link>
 
