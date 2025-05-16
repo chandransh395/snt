@@ -9,6 +9,93 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      blog_posts: {
+        Row: {
+          author: string
+          category: string | null
+          content: string
+          excerpt: string | null
+          id: number
+          image: string
+          published_at: string | null
+          tags: string[] | null
+          title: string
+        }
+        Insert: {
+          author: string
+          category?: string | null
+          content: string
+          excerpt?: string | null
+          id?: number
+          image: string
+          published_at?: string | null
+          tags?: string[] | null
+          title: string
+        }
+        Update: {
+          author?: string
+          category?: string | null
+          content?: string
+          excerpt?: string | null
+          id?: number
+          image?: string
+          published_at?: string | null
+          tags?: string[] | null
+          title?: string
+        }
+        Relationships: []
+      }
+      bookings: {
+        Row: {
+          created_at: string | null
+          destination_id: number
+          destination_name: string
+          id: string
+          num_travelers: number
+          price: number
+          special_requests: string | null
+          status: string | null
+          travel_date: string
+          traveler_email: string
+          traveler_name: string
+          traveler_phone: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          destination_id: number
+          destination_name: string
+          id?: string
+          num_travelers: number
+          price: number
+          special_requests?: string | null
+          status?: string | null
+          travel_date: string
+          traveler_email: string
+          traveler_name: string
+          traveler_phone: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          destination_id?: number
+          destination_name?: string
+          id?: string
+          num_travelers?: number
+          price?: number
+          special_requests?: string | null
+          status?: string | null
+          travel_date?: string
+          traveler_email?: string
+          traveler_name?: string
+          traveler_phone?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null

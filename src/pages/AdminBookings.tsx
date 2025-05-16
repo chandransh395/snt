@@ -1,8 +1,7 @@
-
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Navigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
+import supabaseCustom from '@/utils/supabase-custom';
 import { useToast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -58,29 +57,20 @@ const AdminBookings = () => {
     try {
       setLoading(true);
       
-      let query = supabase
+      let query = supabaseCustom
         .from('bookings')
-        .select(`
-          *,
-          destinations(name)
-        `)
-        .order('created_at', { ascending: false });
+        .select('*');
         
       if (filter !== 'all') {
         query = query.eq('status', filter);
       }
       
-      const { data, error } = await query;
+      const { data, error } = await query.order('created_at', { ascending: false });
       
       if (error) throw error;
       
       if (data) {
-        const formattedData = data.map(item => ({
-          ...item,
-          destination_name: item.destinations ? item.destinations.name : 'Unknown'
-        }));
-        
-        setBookings(formattedData);
+        setBookings(data as Booking[]);
       }
     } catch (error) {
       console.error('Error fetching bookings:', error);
@@ -103,7 +93,7 @@ const AdminBookings = () => {
     try {
       setUpdating(true);
       
-      const { error } = await supabase
+      const { error } = await supabaseCustom
         .from('bookings')
         .update({ 
           status: newStatus,

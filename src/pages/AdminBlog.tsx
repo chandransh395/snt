@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Navigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
+import supabaseCustom from '@/utils/supabase-custom';
 import { useToast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -21,7 +21,7 @@ type BlogPost = {
   author: string;
   content: string;
   image: string;
-  excerpt: string;
+  excerpt: string | null;
   published_at: string;
   category: string;
   tags: string[] | null;
@@ -62,13 +62,13 @@ const AdminBlog = () => {
   const fetchBlogPosts = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
+      const { data, error } = await supabaseCustom
         .from('blog_posts')
         .select('*')
         .order('published_at', { ascending: false });
         
       if (error) throw error;
-      setBlogPosts(data || []);
+      setBlogPosts(data as BlogPost[] || []);
     } catch (error) {
       console.error('Error fetching blog posts:', error);
       toast({
@@ -122,7 +122,7 @@ const AdminBlog = () => {
   const handleDeleteBlogPost = async (id: number) => {
     if (confirm('Are you sure you want to delete this blog post?')) {
       try {
-        const { error } = await supabase
+        const { error } = await supabaseCustom
           .from('blog_posts')
           .delete()
           .eq('id', id);
@@ -162,7 +162,7 @@ const AdminBlog = () => {
       const now = new Date().toISOString();
       
       if (isEditing) {
-        const { error } = await supabase
+        const { error } = await supabaseCustom
           .from('blog_posts')
           .update({
             title: currentBlogPost.title,
@@ -182,7 +182,7 @@ const AdminBlog = () => {
           description: 'Blog post updated successfully.',
         });
       } else {
-        const { error } = await supabase
+        const { error } = await supabaseCustom
           .from('blog_posts')
           .insert({
             title: currentBlogPost.title,
