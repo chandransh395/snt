@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Navigate } from 'react-router-dom';
@@ -71,7 +70,7 @@ const AdminBookings = () => {
       if (error) throw error;
       
       if (data) {
-        setBookings(data as Booking[]);
+        setBookings(data as any as Booking[]);
       }
     } catch (error) {
       console.error('Error fetching bookings:', error);

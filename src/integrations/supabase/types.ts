@@ -150,6 +150,45 @@ export type Database = {
         }
         Relationships: []
       }
+      site_settings: {
+        Row: {
+          address: string
+          email: string
+          google_maps_url: string
+          id: number
+          office_hours: string
+          phone: string
+          social_facebook: string | null
+          social_instagram: string | null
+          social_twitter: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          address?: string
+          email?: string
+          google_maps_url?: string
+          id?: number
+          office_hours?: string
+          phone?: string
+          social_facebook?: string | null
+          social_instagram?: string | null
+          social_twitter?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          address?: string
+          email?: string
+          google_maps_url?: string
+          id?: number
+          office_hours?: string
+          phone?: string
+          social_facebook?: string | null
+          social_instagram?: string | null
+          social_twitter?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       tags: {
         Row: {
           id: number

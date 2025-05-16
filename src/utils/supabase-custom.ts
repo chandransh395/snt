@@ -5,7 +5,8 @@ import { Database } from "@/integrations/supabase/types";
 // This is a workaround for TypeScript type limitations
 // It allows us to access tables that might not be in the auto-generated types
 export const supabaseCustom = {
-  from: <T extends keyof Database['public']['Tables'] | string>(table: T) => {
+  from: <T extends string>(table: T) => {
+    // Using 'as any' to bypass TypeScript table name restrictions
     return supabase.from(table as any);
   },
   // Add other methods as needed

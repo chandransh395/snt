@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Navigate } from 'react-router-dom';
@@ -68,7 +67,7 @@ const AdminBlog = () => {
         .order('published_at', { ascending: false });
         
       if (error) throw error;
-      setBlogPosts(data as BlogPost[] || []);
+      setBlogPosts((data as any as BlogPost[]) || []);
     } catch (error) {
       console.error('Error fetching blog posts:', error);
       toast({

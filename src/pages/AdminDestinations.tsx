@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Navigate } from 'react-router-dom';
@@ -74,7 +73,7 @@ const AdminDestinations = () => {
         .order('id');
         
       if (error) throw error;
-      setDestinations(data as Destination[] || []);
+      setDestinations(data as any as Destination[] || []);
     } catch (error) {
       console.error('Error fetching destinations:', error);
       toast({
@@ -95,7 +94,7 @@ const AdminDestinations = () => {
         .order('name');
         
       if (error) throw error;
-      setTags(data as Tag[] || []);
+      setTags(data as any as Tag[] || []);
     } catch (error) {
       console.error('Error fetching tags:', error);
     }

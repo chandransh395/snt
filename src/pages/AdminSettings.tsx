@@ -1,8 +1,6 @@
-
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Navigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Loader2 } from 'lucide-react';
+import { supabaseCustom } from '@/utils/supabase-custom';
 
 interface SiteSettings {
   id: string;
@@ -54,7 +53,7 @@ const AdminSettings = () => {
     try {
       setLoading(true);
       
-      const { data, error } = await supabase
+      const { data, error } = await supabaseCustom
         .from('site_settings')
         .select('*')
         .eq('id', '1')
@@ -65,7 +64,7 @@ const AdminSettings = () => {
       }
       
       if (data) {
-        setSettings(data);
+        setSettings(data as any as SiteSettings);
       }
     } catch (error) {
       console.error('Error fetching settings:', error);
@@ -91,7 +90,7 @@ const AdminSettings = () => {
     try {
       setSaving(true);
       
-      const { error } = await supabase
+      const { error } = await supabaseCustom
         .from('site_settings')
         .upsert(settings, { onConflict: 'id' });
         
