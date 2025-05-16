@@ -1,43 +1,32 @@
 
 /**
- * Format a number as Indian Rupees (INR)
- * @param amount - The amount to format
- * @param options - Formatting options
- * @returns Formatted currency string
+ * Formats a number as a rupees amount.
+ * @param amount - The amount to format.
+ * @returns The formatted amount.
  */
-export const formatINR = (
-  amount: number, 
-  options: { 
-    decimals?: number, 
-    showSymbol?: boolean,
-    showCode?: boolean
-  } = {}
-): string => {
-  const { 
-    decimals = 0, 
-    showSymbol = true,
-    showCode = false
-  } = options;
+export function formatPrice(amount: number | string): string {
+  const numericAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
   
-  // Format with Indian numbering system (lakhs, crores)
-  const formatter = new Intl.NumberFormat('en-IN', {
+  if (isNaN(numericAmount)) {
+    return 'Invalid amount';
+  }
+  
+  // Format as Indian Rupee
+  const formattedAmount = new Intl.NumberFormat('en-IN', {
     style: 'currency',
     currency: 'INR',
-    minimumFractionDigits: decimals,
-    maximumFractionDigits: decimals,
-  });
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0
+  }).format(numericAmount);
   
-  let formatted = formatter.format(amount);
-  
-  // Remove symbol if not required
-  if (!showSymbol) {
-    formatted = formatted.replace(/[₹]/g, '').trim();
-  }
-  
-  // Add ISO code if required
-  if (showCode) {
-    formatted = `${formatted}${showSymbol ? ' ' : ''}INR`;
-  }
-  
-  return formatted;
-};
+  return formattedAmount;
+}
+
+/**
+ * Formats a number as a price with "From" prefix.
+ * @param amount - The amount to format.
+ * @returns The formatted price with "From" prefix.
+ */
+export function formatPriceWithFrom(amount: number | string): string {
+  return `From ${formatPrice(amount)}`;
+}

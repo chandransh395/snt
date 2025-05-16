@@ -1,6 +1,17 @@
 
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { supabase } from "@/integrations/supabase/client";
+import { Loader2 } from "lucide-react";
+
+interface SiteSettings {
+  phone: string;
+  email: string;
+  address: string;
+  google_maps_url: string;
+  office_hours: string;
+}
 
 const ContactHero = () => {
   return (
@@ -17,12 +28,12 @@ const ContactHero = () => {
 
       <div className="container mx-auto px-4 relative z-10">
         <div className="max-w-3xl mx-auto text-center text-white">
-          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 font-playfair">
+          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 font-sans">
             Contact <span className="text-travel-gold">Us</span>
           </h1>
           <div className="w-24 h-1 bg-travel-gold mx-auto mb-6"></div>
           <p className="text-xl text-gray-200 mb-8">
-            Begin your journey with JourneyGlow. Our travel specialists are ready to help you create your perfect travel experience.
+            Begin your journey with Seeta Narayan Travels. Our travel specialists are ready to help you create your perfect travel experience.
           </p>
         </div>
       </div>
@@ -31,58 +42,99 @@ const ContactHero = () => {
 };
 
 const ContactForm = () => {
+  const [settings, setSettings] = useState<SiteSettings | null>(null);
+  const [loading, setLoading] = useState(true);
+  
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        setLoading(true);
+        const { data, error } = await supabase
+          .from('site_settings')
+          .select('*')
+          .eq('id', '1')
+          .single();
+          
+        if (error) throw error;
+        setSettings(data);
+      } catch (error) {
+        console.error('Error fetching settings:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchSettings();
+  }, []);
+  
+  const defaultSettings = {
+    phone: '+91 750-061-5426',
+    email: 'sales.seetanarayantravels@gmail.com',
+    address: 'Badrinath Rd NH58, Post & Distt - Rudraprayag, 246171 Uttarakhand',
+    google_maps_url: 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3449.7668800774156!2d78.9767738!3d30.1541861!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x390924631c03389d%3A0xd09e08c160ebc3ea!2sRudraprayag%2C%20Uttarakhand%20246171!5e0!3m2!1sen!2sin!4v1677578984143!5m2!1sen!2sin',
+    office_hours: 'Monday-Friday, 9am-6pm IST'
+  };
+  
+  const displaySettings = settings || defaultSettings;
+
   return (
-    <section className="py-20 bg-muted">
+    <section className="py-20 bg-muted" id="contact-form">
       <div className="container mx-auto px-4">
         <div className="max-w-6xl mx-auto">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
             <div>
-              <h2 className="text-3xl font-bold mb-6 font-playfair">Get in <span className="text-travel-gold">Touch</span></h2>
+              <h2 className="text-3xl font-bold mb-6 font-sans">Get in <span className="text-travel-gold">Touch</span></h2>
               <p className="text-lg text-muted-foreground mb-8">
                 Whether you have a question about our destinations, need help planning your journey, or want to discuss a custom itinerary, we're here to help.
               </p>
               
-              <div className="space-y-6">
-                <div className="flex items-start space-x-4">
-                  <div className="bg-travel-gold rounded-full p-3">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-                    </svg>
+              {loading ? (
+                <div className="flex items-center space-x-4">
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                  <span>Loading contact information...</span>
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  <div className="flex items-start space-x-4">
+                    <div className="bg-travel-gold rounded-full p-3">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold mb-1">Phone</h3>
+                      <p className="text-muted-foreground">{displaySettings.phone}</p>
+                      <p className="text-muted-foreground">{displaySettings.office_hours}</p>
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="text-lg font-semibold mb-1">Phone</h3>
-                    <p className="text-muted-foreground">+1 (555) 123-4567</p>
-                    <p className="text-muted-foreground">Monday-Friday, 9am-6pm EST</p>
+                  
+                  <div className="flex items-start space-x-4">
+                    <div className="bg-travel-gold rounded-full p-3">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold mb-1">Email</h3>
+                      <p className="text-muted-foreground">{displaySettings.email}</p>
+                      <p className="text-muted-foreground">We respond within 24 hours</p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-start space-x-4">
+                    <div className="bg-travel-gold rounded-full p-3">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold mb-1">Visit Us</h3>
+                      <p className="text-muted-foreground">{displaySettings.address}</p>
+                    </div>
                   </div>
                 </div>
-                
-                <div className="flex items-start space-x-4">
-                  <div className="bg-travel-gold rounded-full p-3">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                    </svg>
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-semibold mb-1">Email</h3>
-                    <p className="text-muted-foreground">info@journeyglow.com</p>
-                    <p className="text-muted-foreground">We respond within 24 hours</p>
-                  </div>
-                </div>
-                
-                <div className="flex items-start space-x-4">
-                  <div className="bg-travel-gold rounded-full p-3">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                    </svg>
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-semibold mb-1">Visit Us</h3>
-                    <p className="text-muted-foreground">123 Travel Street, Suite 100</p>
-                    <p className="text-muted-foreground">New York, NY 10001</p>
-                  </div>
-                </div>
-              </div>
+              )}
               
               <div className="mt-12">
                 <h3 className="text-xl font-semibold mb-4">Connect With Us</h3>
@@ -117,7 +169,7 @@ const ContactForm = () => {
             
             <div>
               <Card className="p-8 shadow-lg bg-background">
-                <h3 className="text-2xl font-bold mb-6 font-playfair">Send Us a <span className="text-travel-gold">Message</span></h3>
+                <h3 className="text-2xl font-bold mb-6 font-sans">Send Us a <span className="text-travel-gold">Message</span></h3>
                 <form className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
@@ -200,23 +252,55 @@ const ContactForm = () => {
 };
 
 const Map = () => {
+  const [mapUrl, setMapUrl] = useState<string>('');
+  
+  useEffect(() => {
+    const fetchMapUrl = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('site_settings')
+          .select('google_maps_url')
+          .eq('id', '1')
+          .single();
+          
+        if (error) throw error;
+        
+        if (data && data.google_maps_url) {
+          setMapUrl(data.google_maps_url);
+        } else {
+          // Default map URL
+          setMapUrl('https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3449.7668800774156!2d78.9767738!3d30.1541861!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x390924631c03389d%3A0xd09e08c160ebc3ea!2sRudraprayag%2C%20Uttarakhand%20246171!5e0!3m2!1sen!2sin!4v1677578984143!5m2!1sen!2sin');
+        }
+      } catch (error) {
+        console.error('Error fetching map URL:', error);
+        // Use default map URL in case of error
+        setMapUrl('https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3449.7668800774156!2d78.9767738!3d30.1541861!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x390924631c03389d%3A0xd09e08c160ebc3ea!2sRudraprayag%2C%20Uttarakhand%20246171!5e0!3m2!1sen!2sin!4v1677578984143!5m2!1sen!2sin');
+      }
+    };
+    
+    fetchMapUrl();
+  }, []);
+
   return (
     <section className="py-20 bg-background">
       <div className="container mx-auto px-4">
         <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold mb-4 font-playfair">Visit Our <span className="text-travel-gold">Office</span></h2>
+          <h2 className="text-3xl font-bold mb-4 font-sans">Visit Our <span className="text-travel-gold">Office</span></h2>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            We'd love to meet you in person! Come visit our office in New York City to discuss your travel plans.
+            We'd love to meet you in person! Come visit our office in Rudraprayag to discuss your travel plans.
           </p>
         </div>
         
         <div className="h-[400px] rounded-lg overflow-hidden">
           <iframe
-            src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d12087.746318586604!2d-73.98517381205055!3d40.75800980182369!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x89c25855c6480299%3A0x55194ec5a1ae072e!2sTimes%20Square!5e0!3m2!1sen!2sus!4v1698104084244!5m2!1sen!2sus"
+            src={mapUrl}
             width="100%"
             height="100%"
             style={{ border: 0 }}
             loading="lazy"
+            referrerPolicy="no-referrer-when-downgrade"
+            allowFullScreen
+            title="Google Maps"
           ></iframe>
         </div>
       </div>
@@ -227,7 +311,7 @@ const Map = () => {
 const FAQs = () => {
   const faqs = [
     {
-      question: "How do I start planning my trip with JourneyGlow?",
+      question: "How do I start planning my trip with Seeta Narayan Travels?",
       answer: "The first step is to reach out to us via this contact form, phone, or email. One of our travel specialists will then schedule a consultation to understand your travel preferences, interests, and expectations.",
     },
     {
@@ -249,9 +333,9 @@ const FAQs = () => {
       <div className="container mx-auto px-4">
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold mb-4 font-playfair">Frequently Asked <span className="text-travel-gold">Questions</span></h2>
+            <h2 className="text-3xl font-bold mb-4 font-sans">Frequently Asked <span className="text-travel-gold">Questions</span></h2>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Find quick answers to common questions about working with JourneyGlow.
+              Find quick answers to common questions about working with Seeta Narayan Travels.
             </p>
           </div>
           

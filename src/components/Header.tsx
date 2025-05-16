@@ -4,7 +4,7 @@ import { Link, useLocation } from "react-router-dom";
 import { ThemeToggle } from "./ThemeToggle";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
-import { LogOut, User, ShieldCheck } from "lucide-react";
+import { LogOut, User, ShieldCheck, Menu, X } from "lucide-react";
 
 const Header = () => {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -41,15 +41,15 @@ const Header = () => {
         : "bg-transparent"
       }`}
     >
-      <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-        <Link to="/" className="z-10">
-          <h1 className="text-2xl font-playfair font-bold tracking-wider">
+      <div className="container mx-auto px-4 py-5 flex items-center justify-between">
+        <Link to="/" className="z-50">
+          <h1 className="text-2xl sm:text-3xl font-sans font-bold tracking-wider">
             Seeta<span className="text-travel-gold">Narayan</span>
           </h1>
         </Link>
 
         {/* Desktop Navigation */}
-        <nav className="hidden md:flex items-center space-x-8">
+        <nav className="hidden md:flex items-center space-x-10">
           {navItems.map((item) => (
             <Link
               key={item.name}
@@ -109,50 +109,21 @@ const Header = () => {
           <ThemeToggle />
           <button
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="text-foreground focus:outline-none"
+            className="text-foreground focus:outline-none z-50"
+            aria-label="Toggle menu"
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className={`transition-all duration-300 ${
-                isMobileMenuOpen ? "rotate-90 opacity-0" : "opacity-100"
-              }`}
-            >
-              <line x1="4" x2="20" y1="12" y2="12" />
-              <line x1="4" x2="20" y1="6" y2="6" />
-              <line x1="4" x2="20" y1="18" y2="18" />
-            </svg>
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className={`absolute top-5 right-4 transition-all duration-300 ${
-                isMobileMenuOpen ? "opacity-100 rotate-0" : "-rotate-90 opacity-0"
-              }`}
-            >
-              <path d="M18 6 6 18" />
-              <path d="m6 6 12 12" />
-            </svg>
+            {isMobileMenuOpen ? (
+              <X className="h-6 w-6" />
+            ) : (
+              <Menu className="h-6 w-6" />
+            )}
           </button>
         </div>
 
         {/* Mobile Menu */}
         <div
-          className={`fixed inset-0 bg-background z-0 transform transition-transform duration-300 ease-in-out ${
-            isMobileMenuOpen ? "translate-x-0" : "translate-x-full"
+          className={`fixed inset-0 z-40 bg-background transition-opacity duration-300 ${
+            isMobileMenuOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
           }`}
         >
           <div className="flex flex-col h-full justify-center items-center space-y-8 pt-16">
@@ -163,19 +134,20 @@ const Header = () => {
                 className={`text-xl font-medium hover:text-travel-gold transition-colors ${
                   location.pathname === item.path ? "text-travel-gold" : ""
                 }`}
+                onClick={() => setIsMobileMenuOpen(false)}
               >
                 {item.name}
               </Link>
             ))}
             
             {!user ? (
-              <Link to="/auth" className="w-full flex justify-center">
+              <Link to="/auth" className="w-full flex justify-center" onClick={() => setIsMobileMenuOpen(false)}>
                 <Button className="w-32">Login</Button>
               </Link>
             ) : (
               <>
                 {isAdmin && (
-                  <Link to="/admin" className="w-full flex justify-center">
+                  <Link to="/admin" className="w-full flex justify-center" onClick={() => setIsMobileMenuOpen(false)}>
                     <Button variant="outline" className="w-32">
                       <ShieldCheck className="h-4 w-4 mr-2" />
                       Admin Panel
