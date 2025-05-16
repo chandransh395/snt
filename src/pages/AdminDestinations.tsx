@@ -2,7 +2,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Navigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -16,6 +15,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { X, Edit, Plus, Trash2 } from 'lucide-react';
 import { formatPrice } from '@/utils/currency';
+import { supabaseCustom } from '@/utils/supabase-custom';
 
 type Destination = {
   id: number;
@@ -68,13 +68,13 @@ const AdminDestinations = () => {
   const fetchDestinations = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
+      const { data, error } = await supabaseCustom
         .from('destinations')
         .select('*')
         .order('id');
         
       if (error) throw error;
-      setDestinations(data || []);
+      setDestinations(data as Destination[] || []);
     } catch (error) {
       console.error('Error fetching destinations:', error);
       toast({
@@ -89,13 +89,13 @@ const AdminDestinations = () => {
   
   const fetchTags = async () => {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await supabaseCustom
         .from('tags')
         .select('*')
         .order('name');
         
       if (error) throw error;
-      setTags(data || []);
+      setTags(data as Tag[] || []);
     } catch (error) {
       console.error('Error fetching tags:', error);
     }
@@ -142,7 +142,7 @@ const AdminDestinations = () => {
   const handleDeleteDestination = async (id: number) => {
     if (confirm('Are you sure you want to delete this destination?')) {
       try {
-        const { error } = await supabase
+        const { error } = await supabaseCustom
           .from('destinations')
           .delete()
           .eq('id', id);
@@ -180,7 +180,7 @@ const AdminDestinations = () => {
       }
       
       if (isEditing) {
-        const { error } = await supabase
+        const { error } = await supabaseCustom
           .from('destinations')
           .update({
             name: currentDestination.name,
@@ -199,7 +199,7 @@ const AdminDestinations = () => {
           description: 'Destination updated successfully.',
         });
       } else {
-        const { error } = await supabase
+        const { error } = await supabaseCustom
           .from('destinations')
           .insert({
             name: currentDestination.name,

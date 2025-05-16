@@ -96,6 +96,36 @@ export type Database = {
         }
         Relationships: []
       }
+      destinations: {
+        Row: {
+          description: string
+          id: number
+          image: string
+          name: string
+          price: string
+          region: string
+          tags: string[] | null
+        }
+        Insert: {
+          description: string
+          id?: number
+          image: string
+          name: string
+          price: string
+          region: string
+          tags?: string[] | null
+        }
+        Update: {
+          description?: string
+          id?: number
+          image?: string
+          name?: string
+          price?: string
+          region?: string
+          tags?: string[] | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -117,6 +147,21 @@ export type Database = {
           id?: string
           updated_at?: string
           username?: string | null
+        }
+        Relationships: []
+      }
+      tags: {
+        Row: {
+          id: number
+          name: string
+        }
+        Insert: {
+          id?: number
+          name: string
+        }
+        Update: {
+          id?: number
+          name?: string
         }
         Relationships: []
       }

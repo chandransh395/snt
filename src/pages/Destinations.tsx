@@ -4,8 +4,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Link } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
-import { supabase } from '@/integrations/supabase/client';
 import { Loader2, Tag } from 'lucide-react';
+import { supabaseCustom } from '@/utils/supabase-custom';
 
 const DestinationHero = () => {
   return (
@@ -59,14 +59,14 @@ const DestinationsList = () => {
   const fetchDestinations = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
+      const { data, error } = await supabaseCustom
         .from('destinations')
         .select('*')
         .order('name');
         
       if (error) throw error;
       
-      setDestinations(data || []);
+      setDestinations(data as Destination[] || []);
       
       // Extract all unique tags from destinations
       const allTags = data?.flatMap(dest => dest.tags || []) || [];

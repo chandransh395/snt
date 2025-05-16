@@ -1,7 +1,6 @@
 
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/components/ui/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -15,6 +14,7 @@ import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { Calendar as CalendarIcon, Loader2 } from 'lucide-react';
 import { formatPrice } from '@/utils/currency';
+import { supabaseCustom } from '@/utils/supabase-custom';
 
 interface Destination {
   id: number;
@@ -62,7 +62,7 @@ const BookingPage = () => {
   const fetchDestination = async (destinationId: number) => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
+      const { data, error } = await supabaseCustom
         .from('destinations')
         .select('*')
         .eq('id', destinationId)
@@ -73,13 +73,13 @@ const BookingPage = () => {
       // Extract numeric price value from string (e.g., "From ₹1,299" -> 1299)
       let priceValue = 1299; // Default fallback price
       if (data) {
-        const priceMatch = data.price.match(/₹([0-9,]+)/);
+        const priceMatch = (data as Destination).price.match(/₹([0-9,]+)/);
         if (priceMatch && priceMatch[1]) {
           priceValue = parseInt(priceMatch[1].replace(/,/g, ''), 10);
         }
         
         setDestination({
-          ...data,
+          ...(data as Destination),
           price_value: priceValue
         });
       }
