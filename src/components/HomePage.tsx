@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Loader2 } from "lucide-react";
 import { supabase } from '@/integrations/supabase/client';
+import DestinationCard from './DestinationCard';
 import { formatPrice } from '@/utils/currency';
 
 type Destination = {
@@ -21,10 +22,13 @@ type Destination = {
 };
 
 const HomePage = () => {
+  // State variables for managing top destinations, loading state, and errors
   const [topDestinations, setTopDestinations] = useState<Destination[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Effect hook to fetch top destinations when the component mounts
+  // The dependency array is empty, so this effect runs only once after the initial render.
   useEffect(() => {
     const fetchTopDestinations = async () => {
       try {
@@ -51,6 +55,7 @@ const HomePage = () => {
     fetchTopDestinations();
   }, []);
 
+  // Render an error message if fetching fails
   if (error) {
     return (
       <div className="text-center py-12">
@@ -60,10 +65,12 @@ const HomePage = () => {
     );
   }
 
+  // Main JSX structure for the HomePage component
   return (
     <section className="py-16">
       <div className="container mx-auto">
-        <h2 className="text-3xl font-bold mb-8 text-center">Top Booked Destinations</h2>
+        <h2 className="text-3xl font-bold mb-8 text-center">Top Destinations</h2>
+
         
         {loading ? (
           <div className="flex justify-center py-12">
@@ -78,7 +85,7 @@ const HomePage = () => {
                 className="block hover:no-underline"
               >
                 <Card className="overflow-hidden h-full hover-lift transition-all duration-300 hover:shadow-md">
-                  <div className="relative h-48 overflow-hidden">
+ <div className="relative h-48 overflow-hidden">
                     <img 
                       src={destination.image} 
                       alt={destination.name} 
@@ -88,7 +95,7 @@ const HomePage = () => {
                       <Badge className="bg-amber-500 text-white">Popular</Badge>
                     </div>
                   </div>
-                  
+
                   <CardContent className="p-4">
                     <h3 className="text-xl font-semibold mb-2">{destination.name}</h3>
                     
@@ -96,11 +103,11 @@ const HomePage = () => {
                       <span className="text-sm text-muted-foreground capitalize">{destination.region}</span>
                       <span className="text-sm font-medium">{destination.price}</span>
                     </div>
-                    
+
                     <p className="text-sm line-clamp-3 mb-4">
                       {destination.description}
                     </p>
-                    
+
                     <div className="flex flex-wrap gap-1 mt-auto">
                       {destination.tags?.slice(0, 3).map((tag, idx) => (
                         <Badge key={idx} variant="outline" className="text-xs">
@@ -114,14 +121,16 @@ const HomePage = () => {
             ))}
           </div>
         ) : (
+          // Render a message if no top destinations are found
           <div className="text-center py-8">
             <p className="text-muted-foreground">No top destinations found</p>
           </div>
         )}
-        
+
         <div className="text-center mt-8">
           <Button asChild className="bg-travel-gold hover:bg-amber-600 text-black">
             <Link to="/destinations">View All Destinations</Link>
+            {/* Button to navigate to the all destinations page */}
           </Button>
         </div>
       </div>
