@@ -12,6 +12,20 @@ const authRequests = new Map<string, { count: number, lastAttempt: number }>();
 const MAX_AUTH_REQUESTS = 5;
 const AUTH_WINDOW = 60000; // 1 minute
 
+// Define SiteSettings type
+export interface SiteSettings {
+  id: number;
+  phone: string;
+  email: string;
+  address: string;
+  google_maps_url: string;
+  office_hours: string;
+  social_facebook: string | null;
+  social_instagram: string | null;
+  social_twitter: string | null;
+  updated_at?: string;
+}
+
 // Enhanced Supabase client with extra security features
 export const supabaseCustom = {
   // Basic operations
@@ -69,8 +83,8 @@ export const supabaseCustom = {
     getSession: () => supabase.auth.getSession(),
     getUser: () => supabase.auth.getUser(),
     signOut: () => supabase.auth.signOut(),
-    onAuthStateChange: (...args: any[]) => supabase.auth.onAuthStateChange(...args),
-    updateUser: (...args: any[]) => supabase.auth.updateUser(...args),
+    onAuthStateChange: (callback: any) => supabase.auth.onAuthStateChange(callback),
+    updateUser: (data: any) => supabase.auth.updateUser(data),
   },
 };
 

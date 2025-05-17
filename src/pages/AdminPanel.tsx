@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
@@ -23,14 +24,14 @@ const AdminPanel = () => {
       try {
         setIsLoading(true);
         
-        // Fetch counts from different tables
+        // Fetch counts from different tables with proper type handling
         const fetchTableCount = async (tableName: 'bookings' | 'destinations' | 'blog_posts' | 'profiles') => {
-          const { data, error } = await supabase
+          const { count, error } = await supabase
             .from(tableName)
-            .select('count', { count: 'exact', head: true });
+            .select('*', { count: 'exact', head: true });
           
           if (error) throw error;
-          return data?.count || 0;
+          return count || 0;
         };
 
         const bookingsCountResult = await fetchTableCount('bookings');
@@ -38,10 +39,10 @@ const AdminPanel = () => {
         const blogPostsCountResult = await fetchTableCount('blog_posts');
         const profilesCountResult = await fetchTableCount('profiles');
         
-        setBookingsCount(bookingsCountResult as number);
-        setDestinationsCount(destinationsCountResult as number);
-        setBlogPostsCount(blogPostsCountResult as number);
-        setUsersCount(profilesCountResult as number);
+        setBookingsCount(bookingsCountResult);
+        setDestinationsCount(destinationsCountResult);
+        setBlogPostsCount(blogPostsCountResult);
+        setUsersCount(profilesCountResult);
       } catch (error) {
         console.error('Error fetching dashboard data:', error);
         toast({
