@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -61,59 +60,19 @@ const FeaturedDestinations = () => {
       try {
         setLoading(true);
         
-        // First attempt to get destinations with booking count
-        const { data: bookingData, error: bookingError } = await supabaseCustom
-          .from('bookings')
-          .select('destination_id, count(*)')
-          .group('destination_id')
-          .order('count', { ascending: false })
-          .limit(3);
+        // Query destinations with top_booked=true, ordered by bookings_count
+        const { data, error } = await supabaseCustom
+          .from('destinations')
+          .select('*, bookings(count)')
+          .eq('top_booked', true)
+          .order('bookings_count', { ascending: false });
           
-        if (bookingError) throw bookingError;
+        if (error) throw error;
         
-        if (bookingData && bookingData.length > 0) {
-          // Get destination details for the top booked destinations
-          const destinationIds = bookingData.map(item => item.destination_id);
-          
-          const { data, error } = await supabaseCustom
-            .from('destinations')
-            .select('*')
-            .in('id', destinationIds);
-            
-          if (error) throw error;
-          
-          if (data && data.length > 0) {
-            // Map booking counts to destinations
-            const destinationsWithCount = data.map(dest => {
-              const bookingItem = bookingData.find(b => b.destination_id === dest.id);
-              return {
-                ...dest,
-                booking_count: bookingItem ? parseInt(bookingItem.count) : 0
-              };
-            });
-            
-            // Sort by booking count
-            const sortedDestinations = destinationsWithCount.sort((a, b) => 
-              (b.booking_count || 0) - (a.booking_count || 0)
-            );
-            
-            setDestinations(sortedDestinations as Destination[]);
-          } else {
-            // Fallback: If no bookings found, just get the most recent destinations
-            const { data: recentDestinations, error: recentError } = await supabaseCustom
-              .from('destinations')
-              .select('*')
-              .order('id', { ascending: false })
-              .limit(3);
-              
-            if (recentError) throw recentError;
-            
-            if (recentDestinations) {
-              setDestinations(recentDestinations as Destination[]);
-            }
-          }
+        if (data && data.length > 0) {
+          setDestinations(data as Destination[]);
         } else {
-          // Fallback: If no bookings found, just get the most recent destinations
+          // Fallback: If no top_booked destinations found, get recent ones
           const { data: recentDestinations, error: recentError } = await supabaseCustom
             .from('destinations')
             .select('*')

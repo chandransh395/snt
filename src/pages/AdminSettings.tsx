@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea"; 
 import { useToast } from "@/components/ui/use-toast";
 import { supabaseCustom, SiteSettings } from "@/utils/supabase-custom";
 import { Loader2 } from 'lucide-react';
@@ -15,6 +16,7 @@ const AdminSettings = () => {
     email: '',
     address: '',
     google_maps_url: '',
+    google_map_iframe: '',
     office_hours: '',
     social_facebook: '',
     social_instagram: '',
@@ -85,7 +87,7 @@ const AdminSettings = () => {
     }
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setSettings(prev => ({ ...prev, [name]: value }));
   };
@@ -174,6 +176,21 @@ const AdminSettings = () => {
                 />
                 <p className="text-sm text-muted-foreground">
                   Paste the embed URL from Google Maps share function
+                </p>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="google_map_iframe">Google Maps Embed Code</Label>
+                <Textarea
+                  id="google_map_iframe"
+                  name="google_map_iframe"
+                  value={settings.google_map_iframe || ''}
+                  onChange={handleInputChange}
+                  placeholder='<iframe src="https://www.google.com/maps/embed?..." width="600" height="450" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>'
+                  rows={4}
+                />
+                <p className="text-sm text-muted-foreground">
+                  Paste the full iframe HTML code from Google Maps
                 </p>
               </div>
               

@@ -99,6 +99,7 @@
   
   .animate-slide-up {
     @apply transition-all duration-300 ease-out translate-y-4 opacity-0 animate-in fade-in-0 slide-in-from-bottom-4;
+    animation: slide-up 0.6s ease-out forwards;
   }
   
   .hover-scale {
@@ -132,6 +133,17 @@
 @keyframes scaleIn {
   from { transform: scale(0.95); opacity: 0; }
   to { transform: scale(1); opacity: 1; }
+}
+
+@keyframes slide-up {
+  from { 
+    transform: translateY(10px); 
+    opacity: 0; 
+  }
+  to { 
+    transform: translateY(0); 
+    opacity: 1; 
+  }
 }
 
 .fadeIn {
