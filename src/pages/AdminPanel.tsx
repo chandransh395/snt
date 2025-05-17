@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Link } from 'react-router-dom';
 import { Grid, Timer, Users, Briefcase, BarChart3, Settings, Globe, FileText, UserPlus } from 'lucide-react';
-import { supabaseCustom } from '@/utils/supabase-custom';
+import { supabase } from '@/integrations/supabase/client';
 
 const AdminPanel = () => {
   const { user, isAdmin } = useAuth();
@@ -54,7 +54,7 @@ const AdminPanel = () => {
   const fetchTableCount = async (table: string) => {
     try {
       // Update the error variable name
-      const { data, error: countError } = await supabaseCustom
+      const { data, error: countError } = await supabase
         .from(table)
         .select('count(*)')
         .single();
@@ -98,7 +98,7 @@ const AdminPanel = () => {
 
   return (
     <div className="container mx-auto py-8 px-4">
-      <div className="flex flex-col md:flex-row md:items-center justify-between mb-8">
+      <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 animate-slide-up">
         <div>
           <h1 className="text-3xl font-bold mb-2">Admin Dashboard</h1>
           <p className="text-muted-foreground">
@@ -121,7 +121,10 @@ const AdminPanel = () => {
       
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
         {stats.map((stat, index) => (
-          <Card key={index} className="transition-shadow hover:shadow-md">
+          <Card 
+            key={index} 
+            className={`transition-all duration-300 hover:shadow-md hover:-translate-y-1 ${index % 2 === 0 ? 'fadeIn delay-100' : 'fadeIn delay-200'}`}
+          >
             <CardContent className="p-6">
               <div className={`inline-flex rounded-lg p-3 ${stat.color}`}>
                 {stat.icon}
@@ -138,8 +141,8 @@ const AdminPanel = () => {
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="md:col-span-2">
-          <Card className="h-full">
+        <div className="md:col-span-2 fadeIn delay-300">
+          <Card className="h-full transition-all duration-300 hover:shadow-md">
             <CardHeader>
               <CardTitle>Quick Actions</CardTitle>
               <CardDescription>Manage your travel business</CardDescription>
@@ -150,7 +153,7 @@ const AdminPanel = () => {
                   <Link key={index} to={link.path}>
                     <Button 
                       variant="outline" 
-                      className="w-full h-auto py-4 px-4 flex flex-col items-center justify-center text-center"
+                      className="w-full h-auto py-4 px-4 flex flex-col items-center justify-center text-center transition-all duration-300 hover:bg-primary/10 hover:-translate-y-1"
                     >
                       <div className="mb-2">{link.icon}</div>
                       <span>{link.name}</span>
@@ -162,15 +165,15 @@ const AdminPanel = () => {
           </Card>
         </div>
         
-        <div>
-          <Card className="h-full">
+        <div className="slideUp delay-200">
+          <Card className="h-full transition-all duration-300 hover:shadow-md">
             <CardHeader>
               <CardTitle>Recent Activity</CardTitle>
               <CardDescription>Latest system events</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                <div className="flex items-start gap-4">
+                <div className="flex items-start gap-4 p-2 rounded-md transition-colors hover:bg-muted/50">
                   <div className="rounded-full bg-green-100 p-2">
                     <UserPlus className="h-4 w-4 text-green-600" />
                   </div>
@@ -179,7 +182,7 @@ const AdminPanel = () => {
                     <p className="text-xs text-muted-foreground">2 hours ago</p>
                   </div>
                 </div>
-                <div className="flex items-start gap-4">
+                <div className="flex items-start gap-4 p-2 rounded-md transition-colors hover:bg-muted/50">
                   <div className="rounded-full bg-blue-100 p-2">
                     <Briefcase className="h-4 w-4 text-blue-600" />
                   </div>
@@ -188,7 +191,7 @@ const AdminPanel = () => {
                     <p className="text-xs text-muted-foreground">5 hours ago</p>
                   </div>
                 </div>
-                <div className="flex items-start gap-4">
+                <div className="flex items-start gap-4 p-2 rounded-md transition-colors hover:bg-muted/50">
                   <div className="rounded-full bg-amber-100 p-2">
                     <Timer className="h-4 w-4 text-amber-600" />
                   </div>

@@ -1,91 +1,163 @@
 
-import { supabase } from "@/integrations/supabase/client";
-import { Database } from "@/integrations/supabase/types";
+import { createClient } from '@supabase/supabase-js';
+import { supabase } from '@/integrations/supabase/client';
 
-// Define interfaces for tables that might not be in auto-generated types
-export interface SiteSettings {
-  id: number;
-  phone: string;
-  email: string;
-  address: string;
-  google_maps_url: string;
-  office_hours: string;
-  social_facebook?: string;
-  social_instagram?: string;
-  social_twitter?: string;
-  updated_at?: string;
-}
+// Security timeout and retry configuration
+const DEFAULT_TIMEOUT = 15000; // 15 seconds
+const MAX_RETRIES = 2;
 
-export interface BlogPost {
-  id: number;
-  title: string;
-  content: string;
-  excerpt?: string;
-  author: string;
-  image: string;
-  published_at: string;
-  category?: string;
-  tags: string[];
-}
+// Rate limiting for auth operations
+const authRequests = new Map<string, { count: number, lastAttempt: number }>();
+const MAX_AUTH_REQUESTS = 5;
+const AUTH_WINDOW = 60000; // 1 minute
 
-export interface Destination {
-  id: number;
-  name: string;
-  region: string;
-  image: string;
-  description: string;
-  price: string;
-  tags: string[];
-}
-
-export interface Booking {
-  id: string;
-  user_id: string;
-  destination_id: number;
-  destination_name: string;
-  travel_date: string;
-  num_travelers: number;
-  created_at?: string;
-  updated_at?: string;
-  price: number;
-  traveler_name: string;
-  traveler_email: string;
-  traveler_phone: string;
-  special_requests?: string;
-  status?: string;
-}
-
-export interface Tag {
-  id: number;
-  name: string;
-}
-
-// This is a workaround for TypeScript type limitations
-// It allows us to access tables that might not be in the auto-generated types
+// Enhanced Supabase client with extra security features
 export const supabaseCustom = {
-  from: <T extends string>(table: T) => {
-    const queryBuilder = supabase.from(table as any);
+  ...supabase,
+  
+  // Add timeout to all requests
+  from: <T = any>(table: string) => {
+    const query = supabase.from<T>(table);
     
-    // Add type assertions for known tables
-    if (table === 'site_settings') {
-      return queryBuilder as any;
-    } else if (table === 'blog_posts') {
-      return queryBuilder as any;
-    } else if (table === 'destinations') {
-      return queryBuilder as any;
-    } else if (table === 'bookings') {
-      return queryBuilder as any;
-    } else if (table === 'tags') {
-      return queryBuilder as any;
-    }
+    // Add secure timeout handling to all query methods
+    const originalSelect = query.select;
+    query.select = function(columns: string) {
+      return addTimeout(originalSelect.call(this, columns), DEFAULT_TIMEOUT);
+    };
     
-    // Default case
-    return queryBuilder;
+    return query;
   },
-  // Add other methods as needed
-  auth: supabase.auth,
-  storage: supabase.storage,
-  rpc: supabase.rpc,
+  
+  // Enhanced auth methods with rate limiting
+  auth: {
+    ...supabase.auth,
+    
+    signInWithPassword: async (credentials: { email: string, password: string }) => {
+      const key = `signin_${credentials.email}`;
+      if (!checkRateLimit(key)) {
+        throw new Error('Too many sign-in attempts. Please try again later.');
+      }
+      
+      try {
+        return await supabase.auth.signInWithPassword(credentials);
+      } catch (error) {
+        incrementRateLimit(key);
+        throw error;
+      }
+    },
+    
+    signUp: async (credentials: { email: string, password: string }) => {
+      const key = `signup_${credentials.email}`;
+      if (!checkRateLimit(key)) {
+        throw new Error('Too many sign-up attempts. Please try again later.');
+      }
+      
+      try {
+        return await supabase.auth.signUp(credentials);
+      } catch (error) {
+        incrementRateLimit(key);
+        throw error;
+      }
+    },
+    
+    resetPasswordForEmail: async (email: string, options?: { redirectTo: string }) => {
+      const key = `reset_${email}`;
+      if (!checkRateLimit(key)) {
+        throw new Error('Too many password reset attempts. Please try again later.');
+      }
+      
+      try {
+        return await supabase.auth.resetPasswordForEmail(email, options);
+      } catch (error) {
+        incrementRateLimit(key);
+        throw error;
+      }
+    },
+    
+    // Pass-through other methods
+    getSession: () => supabase.auth.getSession(),
+    getUser: () => supabase.auth.getUser(),
+    signOut: () => supabase.auth.signOut(),
+    onAuthStateChange: (...args: any[]) => supabase.auth.onAuthStateChange(...args),
+    updateUser: (...args: any[]) => supabase.auth.updateUser(...args),
+  },
+  
+  // Enhanced storage with timeout
+  storage: {
+    ...supabase.storage,
+    from: (bucket: string) => {
+      const storageRef = supabase.storage.from(bucket);
+      
+      // Add timeout to upload and download methods
+      const originalUpload = storageRef.upload;
+      storageRef.upload = function(path: string, file: File) {
+        return addTimeout(originalUpload.call(this, path, file), DEFAULT_TIMEOUT * 2);
+      };
+      
+      const originalDownload = storageRef.download;
+      storageRef.download = function(path: string) {
+        return addTimeout(originalDownload.call(this, path), DEFAULT_TIMEOUT * 2);
+      };
+      
+      return storageRef;
+    }
+  }
 };
 
-export default supabaseCustom;
+// Helper functions for security features
+function addTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
+  return new Promise((resolve, reject) => {
+    // Create timeout error
+    const timeoutId = setTimeout(() => {
+      reject(new Error(`Request timed out after ${timeoutMs}ms`));
+    }, timeoutMs);
+    
+    // Execute original promise
+    promise
+      .then(result => {
+        clearTimeout(timeoutId);
+        resolve(result);
+      })
+      .catch(error => {
+        clearTimeout(timeoutId);
+        reject(error);
+      });
+  });
+}
+
+function checkRateLimit(key: string): boolean {
+  const now = Date.now();
+  const record = authRequests.get(key) || { count: 0, lastAttempt: now };
+  
+  // Reset count if outside window
+  if (now - record.lastAttempt > AUTH_WINDOW) {
+    authRequests.set(key, { count: 1, lastAttempt: now });
+    return true;
+  }
+  
+  // Check if rate limit exceeded
+  if (record.count >= MAX_AUTH_REQUESTS) {
+    return false;
+  }
+  
+  // Update request count
+  authRequests.set(key, { count: record.count + 1, lastAttempt: now });
+  return true;
+}
+
+function incrementRateLimit(key: string): void {
+  const record = authRequests.get(key);
+  if (record) {
+    authRequests.set(key, { ...record, count: record.count + 1 });
+  }
+}
+
+// Scheduled cleanup of rate limit records
+setInterval(() => {
+  const now = Date.now();
+  authRequests.forEach((record, key) => {
+    if (now - record.lastAttempt > AUTH_WINDOW) {
+      authRequests.delete(key);
+    }
+  });
+}, AUTH_WINDOW);

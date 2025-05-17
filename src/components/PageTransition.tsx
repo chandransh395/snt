@@ -27,8 +27,10 @@ const PageTransition = ({ children }: PageTransitionProps) => {
   return (
     <div
       className={`${
-        transitionStage === "fadeIn" ? "opacity-100" : "opacity-0"
-      } transition-opacity duration-300 ease-in-out min-h-screen`}
+        transitionStage === "fadeIn" 
+          ? "opacity-100 translate-y-0" 
+          : "opacity-0 translate-y-4"
+      } transition-all duration-300 ease-in-out min-h-screen will-change-transform`}
     >
       {children}
     </div>

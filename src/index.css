@@ -85,8 +85,75 @@
   .section-padding {
     @apply py-16 md:py-24 px-4 md:px-8 lg:px-16;
   }
-  
-  .page-transition {
-    @apply transition-opacity duration-500 ease-in-out;
+}
+
+/* Animation classes */
+@layer components {
+  .animate-fade-in {
+    @apply transition-opacity duration-300 ease-in-out opacity-0 animate-in fade-in;
   }
+  
+  .animate-fade-out {
+    @apply transition-opacity duration-300 ease-in-out opacity-100 animate-out fade-out;
+  }
+  
+  .animate-slide-up {
+    @apply transition-all duration-300 ease-out translate-y-4 opacity-0 animate-in fade-in-0 slide-in-from-bottom-4;
+  }
+  
+  .hover-scale {
+    @apply transition-transform duration-200 hover:scale-105;
+  }
+  
+  .hover-lift {
+    @apply transition-all duration-200 hover:-translate-y-1 hover:shadow-md;
+  }
+  
+  .hover-glow {
+    @apply transition-all duration-200 hover:shadow-md hover:shadow-primary/25;
+  }
+
+  /* Interactive links with underline animation */
+  .animated-link {
+    @apply relative inline-block after:content-[''] after:absolute after:w-full after:scale-x-0 after:h-0.5 after:bottom-0 after:left-0 after:bg-primary after:origin-bottom-right after:transition-transform after:duration-300 hover:after:scale-x-100 hover:after:origin-bottom-left;
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { transform: translateY(10px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes scaleIn {
+  from { transform: scale(0.95); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+.fadeIn {
+  animation: fadeIn 0.3s ease forwards;
+}
+
+.slideUp {
+  animation: slideUp 0.4s ease forwards;
+}
+
+.scaleIn {
+  animation: scaleIn 0.3s ease forwards;
+}
+
+.delay-100 {
+  animation-delay: 100ms;
+}
+
+.delay-200 {
+  animation-delay: 200ms;
+}
+
+.delay-300 {
+  animation-delay: 300ms;
 }
