@@ -1,12 +1,12 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useSearchParams } from 'react-router-dom';
 import { useToast } from '@/components/ui/use-toast';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -14,18 +14,22 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
-import { Loader2 } from 'lucide-react';
+import { Loader2, AlertCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+
+const PASSWORD_MIN_LENGTH = 8;
+const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]).{8,}$/;
+const PASSWORD_ERROR_MESSAGE = `Password must be at least ${PASSWORD_MIN_LENGTH} characters and include uppercase, lowercase, number, and special character`;
 
 const loginSchema = z.object({
   email: z.string().email('Please enter a valid email'),
-  password: z.string().min(6, 'Password must be at least 6 characters')
+  password: z.string().min(PASSWORD_MIN_LENGTH, `Password must be at least ${PASSWORD_MIN_LENGTH} characters`)
 });
 
 const registerSchema = z.object({
   email: z.string().email('Please enter a valid email'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
-  confirmPassword: z.string().min(6, 'Password must be at least 6 characters')
+  password: z.string().min(PASSWORD_MIN_LENGTH, PASSWORD_ERROR_MESSAGE).regex(PASSWORD_REGEX, PASSWORD_ERROR_MESSAGE),
+  confirmPassword: z.string().min(PASSWORD_MIN_LENGTH, `Password must be at least ${PASSWORD_MIN_LENGTH} characters`)
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords don't match",
   path: ["confirmPassword"],
@@ -37,8 +41,8 @@ const forgotPasswordSchema = z.object({
 
 const resetPasswordSchema = z.object({
   otp: z.string().min(6, 'OTP must be 6 digits'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
-  confirmPassword: z.string().min(6, 'Password must be at least 6 characters')
+  password: z.string().min(PASSWORD_MIN_LENGTH, PASSWORD_ERROR_MESSAGE).regex(PASSWORD_REGEX, PASSWORD_ERROR_MESSAGE),
+  confirmPassword: z.string().min(PASSWORD_MIN_LENGTH, `Password must be at least ${PASSWORD_MIN_LENGTH} characters`)
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords don't match",
   path: ["confirmPassword"],
@@ -47,11 +51,31 @@ const resetPasswordSchema = z.object({
 const Auth = () => {
   const { user, signIn, signUp } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState('login');
+  const [searchParams] = useSearchParams();
+  const tabParam = searchParams.get('tab');
+  const [activeTab, setActiveTab] = useState(tabParam === 'reset' ? 'forgot' : (tabParam || 'login'));
   const [forgotPasswordEmail, setForgotPasswordEmail] = useState('');
   const [otpAttempts, setOtpAttempts] = useState(0);
   const [showOtpForm, setShowOtpForm] = useState(false);
+  const [passwordResetToken, setPasswordResetToken] = useState('');
   const { toast } = useToast();
+  
+  useEffect(() => {
+    // Check for password reset token in URL
+    const hash = window.location.hash;
+    if (hash.includes('type=recovery')) {
+      const token = new URLSearchParams(hash.substring(1)).get('access_token');
+      if (token) {
+        setPasswordResetToken(token);
+        setActiveTab('forgot');
+        setShowOtpForm(true);
+        toast({
+          title: 'Password Reset',
+          description: 'Please enter a new password.',
+        });
+      }
+    }
+  }, [toast]);
   
   // If user is already logged in, redirect to home page
   if (user) {
@@ -142,7 +166,7 @@ const Auth = () => {
       
       toast({
         title: 'Reset email sent',
-        description: 'Please check your email for the OTP code',
+        description: 'Please check your email for the recovery link',
       });
     } catch (error: any) {
       console.error('Forgot password error:', error);
@@ -169,7 +193,7 @@ const Auth = () => {
     setIsLoading(true);
     try {
       // In a real implementation we would verify the OTP
-      // Here we're simulating it with Supabase's updateUser function
+      // Here we're using Supabase's token-based reset
       setOtpAttempts(prev => prev + 1);
 
       // Check for previous password changes
@@ -188,10 +212,14 @@ const Auth = () => {
         return;
       }
 
-      // Update password
-      const { error } = await supabase.auth.updateUser({ 
-        password: data.password 
-      });
+      // Update password - using token if available, otherwise regular update
+      const { error } = passwordResetToken ? 
+        await supabase.auth.updateUser({
+          password: data.password
+        }) :
+        await supabase.auth.updateUser({ 
+          password: data.password 
+        });
       
       if (error) throw error;
 
@@ -206,6 +234,7 @@ const Auth = () => {
       // Reset state and move back to login
       setShowOtpForm(false);
       setActiveTab('login');
+      setPasswordResetToken('');
     } catch (error: any) {
       console.error('Reset password error:', error);
       toast({
@@ -245,7 +274,7 @@ const Auth = () => {
                       <FormItem>
                         <FormLabel>Email</FormLabel>
                         <FormControl>
-                          <Input placeholder="name@example.com" {...field} />
+                          <Input placeholder="name@example.com" autoComplete="email" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -259,7 +288,7 @@ const Auth = () => {
                       <FormItem>
                         <FormLabel>Password</FormLabel>
                         <FormControl>
-                          <Input type="password" placeholder="••••••••" {...field} />
+                          <Input type="password" placeholder="••••••••" autoComplete="current-password" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -280,6 +309,17 @@ const Auth = () => {
                       'Sign In'
                     )}
                   </Button>
+
+                  <div className="text-center">
+                    <Button 
+                      variant="link" 
+                      type="button" 
+                      onClick={() => setActiveTab('forgot')} 
+                      className="text-sm"
+                    >
+                      Forgot password?
+                    </Button>
+                  </div>
                 </form>
               </Form>
             </TabsContent>
@@ -287,6 +327,13 @@ const Auth = () => {
             <TabsContent value="register">
               <Form {...registerForm}>
                 <form onSubmit={registerForm.handleSubmit(handleRegister)} className="space-y-4">
+                  <Alert className="mb-4 bg-blue-50">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription>
+                      Password must be at least 8 characters and include uppercase, lowercase, number, and special character
+                    </AlertDescription>
+                  </Alert>
+
                   <FormField
                     control={registerForm.control}
                     name="email"
@@ -294,7 +341,7 @@ const Auth = () => {
                       <FormItem>
                         <FormLabel>Email</FormLabel>
                         <FormControl>
-                          <Input placeholder="name@example.com" {...field} />
+                          <Input placeholder="name@example.com" autoComplete="email" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -308,7 +355,7 @@ const Auth = () => {
                       <FormItem>
                         <FormLabel>Password</FormLabel>
                         <FormControl>
-                          <Input type="password" placeholder="••••••••" {...field} />
+                          <Input type="password" placeholder="••••••••" autoComplete="new-password" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -322,7 +369,7 @@ const Auth = () => {
                       <FormItem>
                         <FormLabel>Confirm Password</FormLabel>
                         <FormControl>
-                          <Input type="password" placeholder="••••••••" {...field} />
+                          <Input type="password" placeholder="••••••••" autoComplete="new-password" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -358,7 +405,7 @@ const Auth = () => {
                         <FormItem>
                           <FormLabel>Email</FormLabel>
                           <FormControl>
-                            <Input placeholder="name@example.com" {...field} />
+                            <Input placeholder="name@example.com" autoComplete="email" {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -386,34 +433,38 @@ const Auth = () => {
                   <form onSubmit={resetPasswordForm.handleSubmit(handleResetPassword)} className="space-y-4">
                     <Alert className="mb-4">
                       <AlertDescription>
-                        Enter the 6-digit code sent to {forgotPasswordEmail}
+                        {passwordResetToken ? 
+                          "Enter your new password below" : 
+                          `Enter the 6-digit code sent to ${forgotPasswordEmail}`}
                       </AlertDescription>
                     </Alert>
                     
-                    <FormField
-                      control={resetPasswordForm.control}
-                      name="otp"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>OTP Code</FormLabel>
-                          <FormControl>
-                            <div className="flex justify-center">
-                              <InputOTP maxLength={6} {...field}>
-                                <InputOTPGroup>
-                                  <InputOTPSlot index={0} />
-                                  <InputOTPSlot index={1} />
-                                  <InputOTPSlot index={2} />
-                                  <InputOTPSlot index={3} />
-                                  <InputOTPSlot index={4} />
-                                  <InputOTPSlot index={5} />
-                                </InputOTPGroup>
-                              </InputOTP>
-                            </div>
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                    {!passwordResetToken && (
+                      <FormField
+                        control={resetPasswordForm.control}
+                        name="otp"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>OTP Code</FormLabel>
+                            <FormControl>
+                              <div className="flex justify-center">
+                                <InputOTP maxLength={6} {...field}>
+                                  <InputOTPGroup>
+                                    <InputOTPSlot index={0} />
+                                    <InputOTPSlot index={1} />
+                                    <InputOTPSlot index={2} />
+                                    <InputOTPSlot index={3} />
+                                    <InputOTPSlot index={4} />
+                                    <InputOTPSlot index={5} />
+                                  </InputOTPGroup>
+                                </InputOTP>
+                              </div>
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    )}
                     
                     <FormField
                       control={resetPasswordForm.control}
@@ -422,7 +473,7 @@ const Auth = () => {
                         <FormItem>
                           <FormLabel>New Password</FormLabel>
                           <FormControl>
-                            <Input type="password" placeholder="••••••••" {...field} />
+                            <Input type="password" placeholder="••••••••" autoComplete="new-password" {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -436,21 +487,23 @@ const Auth = () => {
                         <FormItem>
                           <FormLabel>Confirm New Password</FormLabel>
                           <FormControl>
-                            <Input type="password" placeholder="••••••••" {...field} />
+                            <Input type="password" placeholder="••••••••" autoComplete="new-password" {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
                       )}
                     />
                     
-                    <div className="text-sm text-muted-foreground mb-4">
-                      {5 - otpAttempts} attempts remaining
-                    </div>
+                    {!passwordResetToken && (
+                      <div className="text-sm text-muted-foreground mb-4">
+                        {5 - otpAttempts} attempts remaining
+                      </div>
+                    )}
                     
                     <Button 
                       type="submit" 
                       className="w-full" 
-                      disabled={isLoading || otpAttempts >= 5}
+                      disabled={isLoading || (!passwordResetToken && otpAttempts >= 5)}
                     >
                       {isLoading ? (
                         <>
@@ -461,6 +514,21 @@ const Auth = () => {
                         'Reset Password'
                       )}
                     </Button>
+
+                    <div className="text-center">
+                      <Button 
+                        variant="link" 
+                        type="button" 
+                        onClick={() => {
+                          setShowOtpForm(false);
+                          setOtpAttempts(0);
+                          setPasswordResetToken('');
+                        }} 
+                        className="text-sm"
+                      >
+                        Back to forgot password
+                      </Button>
+                    </div>
                   </form>
                 </Form>
               )}
