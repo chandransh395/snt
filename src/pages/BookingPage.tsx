@@ -1,150 +1,178 @@
-import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
-import { useToast } from '@/components/ui/use-toast';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Calendar } from '@/components/ui/calendar';
-import { format } from 'date-fns';
-import { cn } from "@/lib/utils";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon, User, MapPin, CreditCard, MessageSquare } from 'lucide-react';
-import { formatPrice } from '@/utils/currency';
-import { Loader2 } from 'lucide-react';
-import { supabaseCustom } from '@/utils/supabase-custom';
 
-type Destination = {
+import { useState, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { useToast } from "@/components/ui/use-toast";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { format } from "date-fns";
+import { Calendar as CalendarIcon, Loader2 } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabaseCustom } from "@/utils/supabase-custom";
+import { cn } from "@/lib/utils";
+
+interface Destination {
   id: number;
   name: string;
   region: string;
   image: string;
   description: string;
   price: string;
-  tags: string[] | null;
-};
+  tags: string[];
+}
 
 const BookingPage = () => {
-  const { id } = useParams();
+  const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { user } = useAuth();
   const { toast } = useToast();
-
+  const { user } = useAuth();
+  
   const [destination, setDestination] = useState<Destination | null>(null);
   const [loading, setLoading] = useState(true);
-  const [numTravelers, setNumTravelers] = useState<number>(1);
-  const [travelDate, setTravelDate] = useState<Date | undefined>();
-  const [travelerName, setTravelerName] = useState('');
-  const [travelerEmail, setTravelerEmail] = useState('');
-  const [travelerPhone, setTravelerPhone] = useState('');
-  const [specialRequests, setSpecialRequests] = useState('');
-  const [price, setPrice] = useState(0);
-  const [bookingLoading, setBookingLoading] = useState(false);
-
+  const [submitting, setSubmitting] = useState(false);
+  
+  // Form states
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [travelers, setTravelers] = useState(1);
+  const [date, setDate] = useState<Date | undefined>(new Date());
+  const [specialRequests, setSpecialRequests] = useState("");
+  
+  // Price calculation
+  const [basePrice, setBasePrice] = useState(0);
+  const [totalPrice, setTotalPrice] = useState(0);
+  
   useEffect(() => {
-    if (!id) {
-      toast({
-        title: 'Error',
-        description: 'Destination ID is missing.',
-        variant: 'destructive',
-      });
-      navigate('/destinations');
-      return;
+    if (user) {
+      setEmail(user.email || "");
     }
     fetchDestination();
-  }, [id, navigate]);
-
+  }, [id, user]);
+  
   useEffect(() => {
-    if (destination) {
-      setPrice(calculatePrice(destination, numTravelers));
+    if (basePrice > 0 && travelers > 0) {
+      setTotalPrice(basePrice * travelers);
     }
-  }, [numTravelers, destination]);
+  }, [basePrice, travelers]);
 
   const fetchDestination = async () => {
     try {
       setLoading(true);
-
-      const { data: destination, error } = await supabaseCustom
-        .from('destinations')
-        .select('*')
-        .eq('id', id)
+      
+      if (!id) {
+        toast({
+          title: "Error",
+          description: "Destination ID is missing.",
+          variant: "destructive",
+        });
+        navigate("/destinations");
+        return;
+      }
+      
+      const { data, error } = await supabaseCustom
+        .from("destinations")
+        .select("*")
+        .eq("id", id)
         .single();
-
+        
       if (error) throw error;
-
-      setDestination(destination as any);
-      setPrice(calculatePrice(destination as any, numTravelers));
+      
+      if (data) {
+        setDestination(data as Destination);
+        
+        // Parse price string to get base price
+        const priceString = data.price;
+        const priceMatch = priceString.match(/\$?(\d+(?:,\d+)*(?:\.\d+)?)/);
+        
+        if (priceMatch && priceMatch[1]) {
+          const parsedPrice = parseFloat(priceMatch[1].replace(/,/g, ""));
+          setBasePrice(parsedPrice);
+        }
+      }
     } catch (error) {
-      console.error('Error fetching destination:', error);
+      console.error("Error fetching destination:", error);
       toast({
-        title: 'Error',
-        description: 'Failed to load destination details.',
-        variant: 'destructive',
+        title: "Error",
+        description: "Failed to load destination details.",
+        variant: "destructive",
       });
-      navigate('/destinations');
     } finally {
       setLoading(false);
     }
   };
 
-  const calculatePrice = (destination: Destination, travelers: number) => {
-    const basePrice = parseFloat(destination.price.replace(/[^0-9.]/g, ''));
-    return basePrice * travelers;
-  };
-
-  const handleBooking = async () => {
-    if (!destination || !travelDate || !travelerName || !travelerEmail || !travelerPhone) {
+  const handleSubmitBooking = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!destination || !date || !name || !email || !phone || travelers < 1) {
       toast({
-        title: 'Error',
-        description: 'Please fill in all required fields.',
-        variant: 'destructive',
+        title: "Missing information",
+        description: "Please fill in all required fields.",
+        variant: "destructive",
       });
       return;
     }
-
+    
     try {
-      setBookingLoading(true);
-
+      setSubmitting(true);
+      
       const bookingData = {
-        user_id: user?.id || 'guest',
         destination_id: destination.id,
         destination_name: destination.name,
-        traveler_name: travelerName,
-        traveler_email: travelerEmail,
-        traveler_phone: travelerPhone,
-        travel_date: format(travelDate, 'yyyy-MM-dd'),
-        num_travelers: numTravelers,
+        traveler_name: name,
+        traveler_email: email,
+        traveler_phone: phone,
+        num_travelers: travelers,
+        price: totalPrice,
+        travel_date: format(date, "yyyy-MM-dd"),
         special_requests: specialRequests,
-        price: price,
-        status: 'pending',
+        user_id: user?.id,
+        status: "pending"
       };
-
-      const { error } = await supabaseCustom.from('bookings').insert(bookingData);
-
+      
+      const { data, error } = await supabaseCustom
+        .from("bookings")
+        .insert([bookingData])
+        .select()
+        .single();
+        
       if (error) throw error;
-
+      
       toast({
-        title: 'Success',
-        description: 'Booking request submitted successfully!',
+        title: "Booking successful!",
+        description: "Your travel booking has been confirmed.",
       });
-      navigate('/bookings');
-    } catch (error) {
-      console.error('Error submitting booking:', error);
+      
+      // Redirect to booking success page
+      navigate("/booking-success", { 
+        state: { 
+          bookingId: data.id,
+          destination: destination.name,
+          travelDate: format(date, "MMMM d, yyyy"),
+          travelers: travelers 
+        } 
+      });
+      
+    } catch (error: any) {
+      console.error("Error submitting booking:", error);
       toast({
-        title: 'Error',
-        description: 'Failed to submit booking request.',
-        variant: 'destructive',
+        title: "Booking failed",
+        description: error.message || "There was a problem with your booking. Please try again.",
+        variant: "destructive",
       });
     } finally {
-      setBookingLoading(false);
+      setSubmitting(false);
     }
   };
 
   if (loading) {
     return (
-      <div className="container mx-auto py-12 flex justify-center items-center">
+      <div className="container mx-auto py-16 flex justify-center">
         <Loader2 className="h-8 w-8 animate-spin" />
       </div>
     );
@@ -152,11 +180,13 @@ const BookingPage = () => {
 
   if (!destination) {
     return (
-      <div className="container mx-auto py-12 text-center">
-        <h1 className="text-3xl font-bold mb-4">Destination Not Found</h1>
-        <p>Sorry, the destination you are looking for could not be found.</p>
-        <Button onClick={() => navigate('/destinations')} className="mt-4">
-          Back to Destinations
+      <div className="container mx-auto py-16 text-center">
+        <h2 className="text-2xl font-semibold mb-4">Destination Not Found</h2>
+        <p className="text-muted-foreground mb-8">
+          The destination you're looking for doesn't exist or has been removed.
+        </p>
+        <Button onClick={() => navigate("/destinations")}>
+          Browse Destinations
         </Button>
       </div>
     );
@@ -164,119 +194,172 @@ const BookingPage = () => {
 
   return (
     <div className="container mx-auto py-12">
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-2xl font-bold">{destination.name}</CardTitle>
-          <CardDescription>Book your trip to {destination.name} today!</CardDescription>
-        </CardHeader>
-        <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          <div>
-            <img src={destination.image} alt={destination.name} className="rounded-md mb-4" />
-            <h2 className="text-xl font-semibold mb-2">About {destination.name}</h2>
-            <p className="text-gray-600">{destination.description}</p>
-            <div className="mt-4">
-              <h3 className="text-lg font-semibold mb-2">Price</h3>
-              <p className="text-green-600 font-bold text-xl">{formatPrice(calculatePrice(destination, numTravelers))}</p>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Destination Preview */}
+        <div className="lg:col-span-1">
+          <Card className="sticky top-24">
+            <div className="relative h-48 overflow-hidden">
+              <img
+                src={destination.image}
+                alt={destination.name}
+                className="w-full h-full object-cover"
+              />
             </div>
-          </div>
-          <div>
-            <h2 className="text-xl font-semibold mb-4">Booking Details</h2>
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="numTravelers">Number of Travelers</Label>
-                <Input
-                  id="numTravelers"
-                  type="number"
-                  min="1"
-                  value={numTravelers}
-                  onChange={(e) => setNumTravelers(parseInt(e.target.value))}
-                />
+            <CardHeader>
+              <CardTitle>{destination.name}</CardTitle>
+              <CardDescription>{destination.region}</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-muted-foreground line-clamp-3">
+                {destination.description}
+              </p>
+              
+              <div className="text-lg font-medium">
+                Base Price: <span className="text-travel-gold">{destination.price}</span> per person
               </div>
-              <div>
-                <Label>Travel Date</Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant={"outline"}
-                      className={cn(
-                        "w-[240px] justify-start text-left font-normal",
-                        !travelDate && "text-muted-foreground"
-                      )}
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {travelDate ? format(travelDate, "PPP") : <span>Pick a date</span>}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={travelDate}
-                      onSelect={setTravelDate}
-                      disabled={(date) =>
-                        date < new Date()
-                      }
-                      initialFocus
+              
+              <div className="border-t pt-4 mt-4">
+                <div className="flex justify-between mb-2">
+                  <span>Base Price</span>
+                  <span>${basePrice.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between mb-2">
+                  <span>Travelers</span>
+                  <span>x {travelers}</span>
+                </div>
+                <div className="flex justify-between font-bold text-lg mt-2 pt-2 border-t">
+                  <span>Total</span>
+                  <span className="text-travel-gold">${totalPrice.toFixed(2)}</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Booking Form */}
+        <div className="lg:col-span-2">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-2xl">Book Your Trip</CardTitle>
+              <CardDescription>
+                Fill in your details to book your trip to {destination.name}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleSubmitBooking} className="space-y-6">
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="name">Full Name</Label>
+                    <Input
+                      id="name"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      placeholder="Your full name"
+                      required
                     />
-                  </PopoverContent>
-                </Popover>
-              </div>
-              <div>
-                <Label htmlFor="travelerName">Traveler Name</Label>
-                <Input
-                  id="travelerName"
-                  type="text"
-                  placeholder="Enter your name"
-                  value={travelerName}
-                  onChange={(e) => setTravelerName(e.target.value)}
-                />
-              </div>
-              <div>
-                <Label htmlFor="travelerEmail">Traveler Email</Label>
-                <Input
-                  id="travelerEmail"
-                  type="email"
-                  placeholder="Enter your email"
-                  value={travelerEmail}
-                  onChange={(e) => setTravelerEmail(e.target.value)}
-                />
-              </div>
-              <div>
-                <Label htmlFor="travelerPhone">Traveler Phone</Label>
-                <Input
-                  id="travelerPhone"
-                  type="tel"
-                  placeholder="Enter your phone number"
-                  value={travelerPhone}
-                  onChange={(e) => setTravelerPhone(e.target.value)}
-                />
-              </div>
-              <div>
-                <Label htmlFor="specialRequests">Special Requests</Label>
-                <Textarea
-                  id="specialRequests"
-                  placeholder="Enter any special requests"
-                  value={specialRequests}
-                  onChange={(e) => setSpecialRequests(e.target.value)}
-                />
-              </div>
-              <Button
-                className="w-full bg-travel-gold hover:bg-amber-600 text-black"
-                onClick={handleBooking}
-                disabled={bookingLoading}
-              >
-                {bookingLoading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Submitting...
-                  </>
-                ) : (
-                  'Book Now'
-                )}
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="email">Email</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="Your email address"
+                      required
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="phone">Phone Number</Label>
+                    <Input
+                      id="phone"
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      placeholder="Your contact number"
+                      required
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="travelers">Number of Travelers</Label>
+                    <Input
+                      id="travelers"
+                      type="number"
+                      min={1}
+                      value={travelers}
+                      onChange={(e) => setTravelers(parseInt(e.target.value))}
+                      required
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label>Travel Date</Label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className={cn(
+                            "w-full justify-start text-left font-normal",
+                            !date && "text-muted-foreground"
+                          )}
+                        >
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {date ? format(date, "PPP") : <span>Pick a date</span>}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={date}
+                          onSelect={setDate}
+                          initialFocus
+                          disabled={(date) => 
+                            date < new Date(new Date().setHours(0, 0, 0, 0))
+                          }
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="specialRequests">Special Requests (optional)</Label>
+                    <Textarea
+                      id="specialRequests"
+                      value={specialRequests}
+                      onChange={(e) => setSpecialRequests(e.target.value)}
+                      placeholder="Any special requirements or preferences..."
+                      rows={4}
+                    />
+                  </div>
+                </div>
+                
+                <div className="border-t pt-6">
+                  <Button 
+                    type="submit"
+                    className="w-full bg-travel-gold hover:bg-amber-600 text-black"
+                    disabled={submitting}
+                  >
+                    {submitting ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Processing...
+                      </>
+                    ) : (
+                      `Book Now - $${totalPrice.toFixed(2)}`
+                    )}
+                  </Button>
+                  
+                  <p className="text-sm text-muted-foreground mt-4 text-center">
+                    By booking, you agree to our terms and conditions.
+                  </p>
+                </div>
+              </form>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
     </div>
   );
 };

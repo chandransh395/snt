@@ -1,280 +1,267 @@
 
+import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Link } from "react-router-dom";
-import { useState, useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Tag } from 'lucide-react';
-import { supabaseCustom } from '@/utils/supabase-custom';
+import { Input } from "@/components/ui/input";
+import { Loader2, Search, X } from "lucide-react";
+import { useToast } from "@/components/ui/use-toast";
+import { supabaseCustom } from "../utils/supabase-custom";
 
-const DestinationHero = () => {
-  return (
-    <section className="relative py-32 overflow-hidden">
-      <div
-        className="absolute inset-0 bg-cover bg-center"
-        style={{
-          backgroundImage:
-            "url(https://images.unsplash.com/photo-1531572753322-ad063cecc140?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1476&q=80)",
-        }}
-      >
-        <div className="absolute inset-0 bg-black bg-opacity-60"></div>
-      </div>
-
-      <div className="container mx-auto px-4 relative z-10">
-        <div className="max-w-3xl mx-auto text-center text-white">
-          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 font-sans">
-            Explore Our <span className="text-travel-gold">Destinations</span>
-          </h1>
-          <div className="w-24 h-1 bg-travel-gold mx-auto mb-6"></div>
-          <p className="text-xl text-gray-200 mb-8">
-            Discover handcrafted journeys to the world's most fascinating destinations, from iconic landmarks to hidden treasures.
-          </p>
-        </div>
-      </div>
-    </section>
-  );
-};
-
-type Destination = {
+interface Destination {
   id: number;
   name: string;
   region: string;
   image: string;
   description: string;
   price: string;
-  tags: string[] | null;
-};
+  tags: string[];
+}
 
-const DestinationsList = () => {
-  const [filter, setFilter] = useState("all");
-  const [tagFilter, setTagFilter] = useState<string | null>(null);
+const Destinations = () => {
   const [destinations, setDestinations] = useState<Destination[]>([]);
+  const [filteredDestinations, setFilteredDestinations] = useState<Destination[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedRegions, setSelectedRegions] = useState<string[]>([]);
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
-  const [availableTags, setAvailableTags] = useState<string[]>([]);
-  
+  const [regions, setRegions] = useState<string[]>([]);
+  const [tags, setTags] = useState<string[]>([]);
+  const { toast } = useToast();
+
   useEffect(() => {
     fetchDestinations();
   }, []);
-  
+
+  useEffect(() => {
+    filterDestinations();
+  }, [searchQuery, selectedRegions, selectedTags, destinations]);
+
   const fetchDestinations = async () => {
     try {
       setLoading(true);
+      
+      // Fetch destinations
       const { data, error } = await supabaseCustom
-        .from('destinations')
-        .select('*')
-        .order('name');
-        
+        .from("destinations")
+        .select("*")
+        .order("name");
+      
       if (error) throw error;
       
-      setDestinations(data as Destination[] || []);
-      
-      // Extract all unique tags from destinations
-      const allTags = data?.flatMap(dest => dest.tags || []) || [];
-      const uniqueTags = [...new Set(allTags)].sort();
-      setAvailableTags(uniqueTags);
+      if (data) {
+        const destinationsData = data as Destination[];
+        setDestinations(destinationsData);
+        
+        // Extract unique regions
+        const uniqueRegions = Array.from(
+          new Set(destinationsData.map((dest) => dest.region))
+        ).sort();
+        setRegions(uniqueRegions);
+        
+        // Extract unique tags
+        const allTags = destinationsData.flatMap((dest) => dest.tags || []);
+        const uniqueTags = Array.from(new Set(allTags)).sort();
+        setTags(uniqueTags);
+      }
     } catch (error) {
-      console.error('Error fetching destinations:', error);
+      console.error("Error fetching destinations:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load destinations data.",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
   };
 
-  const filteredDestinations = destinations.filter(dest => {
-    // First filter by region
-    const regionMatches = filter === "all" || dest.region === filter;
+  const filterDestinations = () => {
+    let filtered = [...destinations];
     
-    // Then filter by tag if a tag filter is active
-    const tagMatches = !tagFilter || (dest.tags && dest.tags.includes(tagFilter));
+    // Filter by search query
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(
+        (dest) =>
+          dest.name.toLowerCase().includes(query) ||
+          dest.region.toLowerCase().includes(query) ||
+          dest.description.toLowerCase().includes(query)
+      );
+    }
     
-    return regionMatches && tagMatches;
-  });
-  
-  const handleTagClick = (tag: string) => {
-    setTagFilter(tagFilter === tag ? null : tag);
+    // Filter by selected regions
+    if (selectedRegions.length > 0) {
+      filtered = filtered.filter((dest) => selectedRegions.includes(dest.region));
+    }
+    
+    // Filter by selected tags
+    if (selectedTags.length > 0) {
+      filtered = filtered.filter((dest) => 
+        dest.tags && selectedTags.some(tag => dest.tags.includes(tag))
+      );
+    }
+    
+    setFilteredDestinations(filtered);
+  };
+
+  const handleRegionToggle = (region: string) => {
+    setSelectedRegions((prev) =>
+      prev.includes(region)
+        ? prev.filter((r) => r !== region)
+        : [...prev, region]
+    );
+  };
+
+  const handleTagToggle = (tag: string) => {
+    setSelectedTags((prev) =>
+      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
+    );
+  };
+
+  const clearFilters = () => {
+    setSearchQuery("");
+    setSelectedRegions([]);
+    setSelectedTags([]);
   };
 
   return (
-    <section className="py-20 bg-muted">
-      <div className="container mx-auto px-4">
-        {/* Tag filters */}
-        {availableTags.length > 0 && (
-          <div className="mb-8">
-            <div className="flex items-center gap-2 mb-3">
-              <Tag className="h-5 w-5 text-travel-gold" />
-              <h3 className="text-lg font-medium">Filter by Tags:</h3>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {availableTags.map(tag => (
-                <Badge
-                  key={tag}
-                  variant={tagFilter === tag ? "default" : "outline"}
-                  className={`cursor-pointer ${tagFilter === tag ? "bg-travel-gold text-black hover:bg-amber-600" : "hover:bg-muted"}`}
-                  onClick={() => handleTagClick(tag)}
-                >
-                  {tag}
-                  {tagFilter === tag && " ✓"}
-                </Badge>
-              ))}
-              {tagFilter && (
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  onClick={() => setTagFilter(null)}
-                  className="text-sm"
-                >
-                  Clear filter
-                </Button>
-              )}
-            </div>
-          </div>
-        )}
-        
-        {/* Region filters */}
-        <div className="flex flex-wrap justify-center mb-12 gap-4">
-          <Button
-            onClick={() => setFilter("all")}
-            variant={filter === "all" ? "default" : "outline"}
-            className={filter === "all" ? "bg-travel-gold hover:bg-amber-600 text-black" : ""}
-          >
-            All Destinations
-          </Button>
-          <Button
-            onClick={() => setFilter("europe")}
-            variant={filter === "europe" ? "default" : "outline"}
-            className={filter === "europe" ? "bg-travel-gold hover:bg-amber-600 text-black" : ""}
-          >
-            Europe
-          </Button>
-          <Button
-            onClick={() => setFilter("asia")}
-            variant={filter === "asia" ? "default" : "outline"}
-            className={filter === "asia" ? "bg-travel-gold hover:bg-amber-600 text-black" : ""}
-          >
-            Asia
-          </Button>
-          <Button
-            onClick={() => setFilter("americas")}
-            variant={filter === "americas" ? "default" : "outline"}
-            className={filter === "americas" ? "bg-travel-gold hover:bg-amber-600 text-black" : ""}
-          >
-            The Americas
-          </Button>
-          <Button
-            onClick={() => setFilter("africa")}
-            variant={filter === "africa" ? "default" : "outline"}
-            className={filter === "africa" ? "bg-travel-gold hover:bg-amber-600 text-black" : ""}
-          >
-            Africa
-          </Button>
-          <Button
-            onClick={() => setFilter("oceania")}
-            variant={filter === "oceania" ? "default" : "outline"}
-            className={filter === "oceania" ? "bg-travel-gold hover:bg-amber-600 text-black" : ""}
-          >
-            Oceania
-          </Button>
+    <div className="container mx-auto py-12">
+      <div className="text-center mb-12">
+        <h1 className="text-4xl font-bold mb-4 font-playfair">Explore Our Destinations</h1>
+        <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+          Discover incredible locations around the world, each offering unique experiences and unforgettable memories.
+        </p>
+      </div>
+
+      {/* Search and Filter */}
+      <div className="mb-8">
+        <div className="relative mb-6">
+          <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search destinations..."
+            className="pl-10"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery("")}
+              className="absolute right-3 top-3"
+              aria-label="Clear search"
+            >
+              <X className="h-4 w-4 text-muted-foreground" />
+            </button>
+          )}
         </div>
 
-        {loading ? (
-          <div className="flex justify-center py-12">
-            <Loader2 className="h-8 w-8 animate-spin" />
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {filteredDestinations.length === 0 ? (
-              <div className="col-span-full text-center py-12">
-                <p className="text-lg text-muted-foreground">No destinations found matching your filters.</p>
-                <Button 
-                  onClick={() => {
-                    setFilter("all");
-                    setTagFilter(null);
-                  }}
-                  variant="link" 
-                  className="mt-2"
-                >
-                  Clear all filters
-                </Button>
-              </div>
-            ) : (
-              filteredDestinations.map(destination => (
-                <Card key={destination.id} className="overflow-hidden border-none shadow-lg group">
-                  <div className="relative h-64 overflow-hidden">
-                    <img
-                      src={destination.image}
-                      alt={destination.name}
-                      className="object-cover w-full h-full transform duration-500 group-hover:scale-110"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black opacity-60"></div>
-                    <div className="absolute bottom-4 left-4 text-white">
-                      <h3 className="text-xl font-semibold mb-1">{destination.name}</h3>
-                      <p className="text-sm font-medium text-travel-gold">
-                        {destination.price}
-                      </p>
-                    </div>
-                  </div>
-                  <CardContent className="p-6">
-                    {destination.tags && destination.tags.length > 0 && (
-                      <div className="flex flex-wrap gap-1 mb-3">
-                        {destination.tags.map((tag, idx) => (
-                          <Badge 
-                            key={idx} 
-                            variant="secondary"
-                            className="text-xs"
-                          >
-                            {tag}
-                          </Badge>
-                        ))}
-                      </div>
-                    )}
-                    
-                    <p className="text-muted-foreground mb-4">{destination.description}</p>
-                    
-                    <div className="flex gap-2">
-                      <Button asChild variant="outline" className="flex-1 border-travel-gold text-travel-gold hover:bg-travel-gold hover:text-white">
-                        <Link to={`/destinations/${destination.id}`}>View Details</Link>
-                      </Button>
-                      <Button asChild className="flex-1 bg-travel-gold hover:bg-amber-600 text-black">
-                        <Link to={`/book/${destination.id}`}>Book Now</Link>
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))
-            )}
-          </div>
-        )}
-      </div>
-    </section>
-  );
-};
+        <div className="flex flex-wrap items-center gap-2">
+          {selectedRegions.length > 0 || selectedTags.length > 0 ? (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={clearFilters}
+              className="flex items-center gap-2"
+            >
+              <X className="h-3.5 w-3.5" /> Clear Filters
+            </Button>
+          ) : null}
+          
+          <span className="text-sm text-muted-foreground mr-2">Regions:</span>
+          {regions.map((region) => (
+            <Badge
+              key={region}
+              variant={selectedRegions.includes(region) ? "default" : "outline"}
+              className="cursor-pointer"
+              onClick={() => handleRegionToggle(region)}
+            >
+              {region}
+            </Badge>
+          ))}
+        </div>
 
-const CustomJourneys = () => {
-  return (
-    <section className="py-20 bg-background">
-      <div className="container mx-auto px-4">
-        <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-3xl md:text-4xl font-bold mb-6 font-sans">
-            Custom <span className="text-travel-gold">Journeys</span>
-          </h2>
-          <p className="text-xl text-muted-foreground mb-8">
-            Don't see your dream destination? Our travel experts can design a personalized journey tailored to your specific interests, preferences, and travel style.
+        <div className="flex flex-wrap items-center gap-2 mt-4">
+          <span className="text-sm text-muted-foreground mr-2">Tags:</span>
+          {tags.map((tag) => (
+            <Badge
+              key={tag}
+              variant={selectedTags.includes(tag) ? "secondary" : "outline"}
+              className="cursor-pointer"
+              onClick={() => handleTagToggle(tag)}
+            >
+              {tag}
+            </Badge>
+          ))}
+        </div>
+      </div>
+
+      {/* Destinations Grid */}
+      {loading ? (
+        <div className="flex justify-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin" />
+        </div>
+      ) : filteredDestinations.length === 0 ? (
+        <div className="text-center py-12">
+          <h2 className="text-2xl font-semibold mb-4">No Destinations Found</h2>
+          <p className="text-muted-foreground mb-8">
+            Try adjusting your search or filter criteria.
           </p>
-          <Button asChild className="bg-travel-gold hover:bg-amber-600 text-black">
-            <Link to="/contact">Inquire About Custom Journeys</Link>
-          </Button>
+          <Button onClick={clearFilters}>Clear All Filters</Button>
         </div>
-      </div>
-    </section>
-  );
-};
-
-const Destinations = () => {
-  return (
-    <>
-      <DestinationHero />
-      <DestinationsList />
-      <CustomJourneys />
-    </>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {filteredDestinations.map((destination) => (
+            <Card key={destination.id} className="overflow-hidden group">
+              <div className="relative h-64 overflow-hidden">
+                <img
+                  src={destination.image}
+                  alt={destination.name}
+                  className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500"
+                />
+                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
+                  <h3 className="text-xl font-semibold text-white">{destination.name}</h3>
+                  <p className="text-sm text-gray-200">{destination.region}</p>
+                </div>
+              </div>
+              <CardContent className="p-6">
+                <p className="text-muted-foreground mb-4 line-clamp-2">
+                  {destination.description}
+                </p>
+                
+                <div className="flex justify-between items-center mb-4">
+                  <span className="font-semibold text-travel-gold">{destination.price}</span>
+                  
+                  {destination.tags && destination.tags.length > 0 && (
+                    <div className="flex flex-wrap gap-1 justify-end">
+                      {destination.tags.slice(0, 2).map((tag, i) => (
+                        <Badge key={i} variant="secondary" className="text-xs">
+                          {tag}
+                        </Badge>
+                      ))}
+                      {destination.tags.length > 2 && (
+                        <Badge variant="outline" className="text-xs">
+                          +{destination.tags.length - 2}
+                        </Badge>
+                      )}
+                    </div>
+                  )}
+                </div>
+                
+                <div className="flex gap-3">
+                  <Button asChild variant="outline" className="flex-1 border-travel-gold text-travel-gold hover:bg-travel-gold hover:text-white">
+                    <Link to={`/destinations/${destination.id}`}>Details</Link>
+                  </Button>
+                  <Button asChild className="flex-1 bg-travel-gold hover:bg-amber-600 text-black">
+                    <Link to={`/book/${destination.id}`}>Book Now</Link>
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+    </div>
   );
 };
 
