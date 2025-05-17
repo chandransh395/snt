@@ -19,7 +19,7 @@ export interface SiteSettings {
   email: string;
   address: string;
   google_maps_url: string;
-  google_map_iframe?: string;
+  google_map_iframe?: string | null;
   office_hours: string;
   social_facebook: string | null;
   social_instagram: string | null;

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Navigate } from 'react-router-dom';
@@ -125,7 +124,7 @@ const AdminDestinations = () => {
         .order('name');
         
       if (error) throw error;
-      setRegions(data as any as Region[] || []);
+      setRegions(data as Region[] || []);
     } catch (error) {
       console.error('Error fetching regions:', error);
     }

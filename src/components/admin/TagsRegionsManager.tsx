@@ -58,7 +58,7 @@ const TagsRegionsManager = () => {
           .order('name');
           
         if (error) throw error;
-        setRegions(data || []);
+        setRegions(data as Region[] || []);
       }
     } catch (err) {
       console.error(`Error fetching ${activeTab}:`, err);
@@ -76,7 +76,7 @@ const TagsRegionsManager = () => {
     setCurrentItem({
       id: item.id,
       name: item.name,
-      value: (item as Region).value
+      value: 'value' in item ? item.value : undefined
     });
     setIsEditing(true);
     setShowForm(true);

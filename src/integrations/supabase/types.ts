@@ -98,6 +98,7 @@ export type Database = {
       }
       destinations: {
         Row: {
+          bookings_count: number | null
           description: string
           id: number
           image: string
@@ -105,8 +106,10 @@ export type Database = {
           price: string
           region: string
           tags: string[] | null
+          top_booked: boolean | null
         }
         Insert: {
+          bookings_count?: number | null
           description: string
           id?: number
           image: string
@@ -114,8 +117,10 @@ export type Database = {
           price: string
           region: string
           tags?: string[] | null
+          top_booked?: boolean | null
         }
         Update: {
+          bookings_count?: number | null
           description?: string
           id?: number
           image?: string
@@ -123,6 +128,7 @@ export type Database = {
           price?: string
           region?: string
           tags?: string[] | null
+          top_booked?: boolean | null
         }
         Relationships: []
       }
@@ -150,10 +156,32 @@ export type Database = {
         }
         Relationships: []
       }
+      regions: {
+        Row: {
+          created_at: string | null
+          id: number
+          name: string
+          value: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: number
+          name: string
+          value: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: number
+          name?: string
+          value?: string
+        }
+        Relationships: []
+      }
       site_settings: {
         Row: {
           address: string
           email: string
+          google_map_iframe: string | null
           google_maps_url: string
           id: number
           office_hours: string
@@ -166,6 +194,7 @@ export type Database = {
         Insert: {
           address?: string
           email?: string
+          google_map_iframe?: string | null
           google_maps_url?: string
           id?: number
           office_hours?: string
@@ -178,6 +207,7 @@ export type Database = {
         Update: {
           address?: string
           email?: string
+          google_map_iframe?: string | null
           google_maps_url?: string
           id?: number
           office_hours?: string

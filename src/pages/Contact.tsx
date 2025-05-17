@@ -1,256 +1,294 @@
 
-import { useState, useEffect } from 'react';
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { useToast } from "@/components/ui/use-toast";
-import { Mail, Phone, Clock, MapPin, Loader2 } from 'lucide-react';
-import { supabaseCustom } from '../utils/supabase-custom';
-
-interface ContactInfo {
-  phone: string;
-  email: string;
-  address: string;
-  google_maps_url: string;
-  office_hours: string;
-}
+import { useState } from 'react';
+import { useToast } from '@/components/ui/use-toast';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Card, CardContent } from '@/components/ui/card';
+import { Loader2 } from 'lucide-react';
+import ContactMap from '@/components/ContactMap';
 
 const Contact = () => {
   const { toast } = useToast();
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [message, setMessage] = useState('');
-  const [sending, setSending] = useState(false);
-  
-  const [contactInfo, setContactInfo] = useState<ContactInfo>({
-    phone: '+1 (555) 123-4567',
-    email: 'info@travelhorizon.com',
-    address: '123 Adventure St, Wanderlust City, WC 10001',
-    google_maps_url: 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3022.2164510008203!2d-73.98780768505079!3d40.758985042561484!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x89c25855a96da09d%3A0x9eb2dd7ea7eb1f0!2sGrand%20Central%20Terminal!5e0!3m2!1sen!2sus!4v1650000000000!5m2!1sen!2sus',
-    office_hours: 'Mon-Fri: 9 AM - 6 PM, Sat: 10 AM - 4 PM'
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    subject: '',
+    message: ''
   });
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    fetchContactInfo();
-  }, []);
-
-  const fetchContactInfo = async () => {
-    try {
-      setLoading(true);
-      const { data, error } = await supabaseCustom
-        .from('site_settings')
-        .select('*')
-        .eq('id', 1)
-        .single();
-        
-      if (error) throw error;
-      
-      if (data) {
-        setContactInfo(data as any);
-      }
-    } catch (error) {
-      console.error('Error fetching contact info:', error);
-      // Use default values if unable to fetch
-    } finally {
-      setLoading(false);
-    }
+  const [loading, setLoading] = useState(false);
+  
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
   };
-
+  
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!name || !email || !message) {
+    // Simple validation
+    if (!formData.name || !formData.email || !formData.message) {
       toast({
-        title: "Error",
-        description: "Please fill in all fields.",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Please fill in all required fields.',
+        variant: 'destructive'
       });
       return;
     }
     
+    // Submit form
     try {
-      setSending(true);
+      setLoading(true);
       
-      // Simulate sending message
+      // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1500));
       
+      // Success
       toast({
-        title: "Success",
-        description: "Your message has been sent. We'll get back to you soon!",
+        title: 'Success',
+        description: 'Your message has been sent! We will get back to you soon.',
       });
       
       // Reset form
-      setName('');
-      setEmail('');
-      setMessage('');
+      setFormData({
+        name: '',
+        email: '',
+        subject: '',
+        message: ''
+      });
     } catch (error) {
-      console.error('Error sending message:', error);
       toast({
-        title: "Error",
-        description: "Failed to send message. Please try again.",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Failed to send your message. Please try again.',
+        variant: 'destructive'
       });
     } finally {
-      setSending(false);
+      setLoading(false);
     }
   };
-
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center min-h-screen">
-        <Loader2 className="h-8 w-8 animate-spin" />
-      </div>
-    );
-  }
-
+  
   return (
-    <div className="container mx-auto py-12">
+    <>
       {/* Hero Section */}
-      <div className="text-center mb-16">
-        <h1 className="text-4xl font-bold mb-4 font-playfair">Get in Touch</h1>
-        <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-          Have questions about our travel packages or need help planning your dream vacation? 
-          We're here to help make your travel dreams a reality.
-        </p>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-        {/* Contact Form */}
-        <div>
-          <Card>
-            <CardHeader>
-              <CardTitle>Send Us a Message</CardTitle>
-              <CardDescription>
-                Fill out the form below and we'll get back to you as soon as possible.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleSubmit} className="space-y-6">
-                <div>
-                  <label htmlFor="name" className="block text-sm font-medium mb-2">
-                    Your Name
-                  </label>
-                  <Input
-                    id="name"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    placeholder="John Doe"
-                    required
-                  />
-                </div>
-                
-                <div>
-                  <label htmlFor="email" className="block text-sm font-medium mb-2">
-                    Email Address
-                  </label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="john@example.com"
-                    required
-                  />
-                </div>
-                
-                <div>
-                  <label htmlFor="message" className="block text-sm font-medium mb-2">
-                    Message
-                  </label>
-                  <Textarea
-                    id="message"
-                    value={message}
-                    onChange={(e) => setMessage(e.target.value)}
-                    placeholder="Tell us about your travel plans..."
-                    rows={6}
-                    required
-                  />
-                </div>
-                
-                <Button 
-                  type="submit" 
-                  className="w-full bg-travel-gold hover:bg-amber-600 text-black"
-                  disabled={sending}
-                >
-                  {sending ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Sending...
-                    </>
-                  ) : (
-                    'Send Message'
-                  )}
-                </Button>
-              </form>
-            </CardContent>
-          </Card>
+      <section className="relative bg-gray-900 text-white py-20">
+        <div className="absolute inset-0 z-0">
+          <img 
+            src="https://images.unsplash.com/photo-1507608616759-54f48f0af0ee?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2071&q=80" 
+            alt="Contact us"
+            className="w-full h-full object-cover opacity-30"
+          />
         </div>
-
-        {/* Contact Information */}
-        <div className="space-y-8">
-          <Card>
-            <CardHeader>
-              <CardTitle>Contact Information</CardTitle>
-              <CardDescription>
-                Reach out to us through any of these channels
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="flex items-start space-x-4">
-                <Phone className="h-5 w-5 text-travel-gold mt-1" />
-                <div>
-                  <h3 className="font-medium">Phone</h3>
-                  <p className="text-muted-foreground">{contactInfo.phone}</p>
-                </div>
-              </div>
-              
-              <div className="flex items-start space-x-4">
-                <Mail className="h-5 w-5 text-travel-gold mt-1" />
-                <div>
-                  <h3 className="font-medium">Email</h3>
-                  <p className="text-muted-foreground">{contactInfo.email}</p>
-                </div>
-              </div>
-              
-              <div className="flex items-start space-x-4">
-                <MapPin className="h-5 w-5 text-travel-gold mt-1" />
-                <div>
-                  <h3 className="font-medium">Address</h3>
-                  <p className="text-muted-foreground">{contactInfo.address}</p>
-                </div>
-              </div>
-              
-              <div className="flex items-start space-x-4">
-                <Clock className="h-5 w-5 text-travel-gold mt-1" />
-                <div>
-                  <h3 className="font-medium">Office Hours</h3>
-                  <p className="text-muted-foreground">{contactInfo.office_hours}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Google Maps */}
-          <Card>
-            <CardContent className="p-0">
-              <iframe
-                src={contactInfo.google_maps_url}
-                width="100%"
-                height="300"
-                style={{ border: 0 }}
-                allowFullScreen
-                loading="lazy"
-                referrerPolicy="no-referrer-when-downgrade"
-                title="Office Location"
-                className="rounded-lg"
-              />
-            </CardContent>
-          </Card>
+        <div className="container mx-auto px-4 relative z-10">
+          <div className="text-center">
+            <h1 className="text-4xl md:text-5xl font-bold mb-4">Contact Us</h1>
+            <p className="max-w-2xl mx-auto text-lg mb-8">
+              Have questions or need assistance? Our team is here to help you plan your perfect journey.
+            </p>
+          </div>
         </div>
-      </div>
-    </div>
+      </section>
+      
+      {/* Contact Form and Info Section */}
+      <section className="py-16">
+        <div className="container mx-auto px-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* Contact Form */}
+            <Card className="shadow-md">
+              <CardContent className="p-6">
+                <h2 className="text-2xl font-bold mb-6">Send Us a Message</h2>
+                
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  <div>
+                    <label htmlFor="name" className="block text-sm font-medium mb-1">
+                      Name *
+                    </label>
+                    <Input 
+                      id="name"
+                      name="name"
+                      value={formData.name}
+                      onChange={handleChange}
+                      placeholder="Your name"
+                      required
+                    />
+                  </div>
+                  
+                  <div>
+                    <label htmlFor="email" className="block text-sm font-medium mb-1">
+                      Email *
+                    </label>
+                    <Input 
+                      id="email"
+                      name="email"
+                      type="email"
+                      value={formData.email}
+                      onChange={handleChange}
+                      placeholder="Your email address"
+                      required
+                    />
+                  </div>
+                  
+                  <div>
+                    <label htmlFor="subject" className="block text-sm font-medium mb-1">
+                      Subject
+                    </label>
+                    <Input 
+                      id="subject"
+                      name="subject"
+                      value={formData.subject}
+                      onChange={handleChange}
+                      placeholder="What is this regarding?"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label htmlFor="message" className="block text-sm font-medium mb-1">
+                      Message *
+                    </label>
+                    <Textarea 
+                      id="message"
+                      name="message"
+                      value={formData.message}
+                      onChange={handleChange}
+                      placeholder="How can we help you?"
+                      rows={5}
+                      required
+                    />
+                  </div>
+                  
+                  <Button 
+                    type="submit" 
+                    className="w-full bg-travel-gold hover:bg-amber-600 text-black"
+                    disabled={loading}
+                  >
+                    {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    {loading ? 'Sending...' : 'Send Message'}
+                  </Button>
+                </form>
+              </CardContent>
+            </Card>
+            
+            {/* Contact Information */}
+            <div>
+              <h2 className="text-2xl font-bold mb-6">Contact Information</h2>
+              
+              <div className="space-y-6">
+                <div>
+                  <h3 className="font-semibold text-lg mb-2">Office Address</h3>
+                  <p className="text-muted-foreground">
+                    123 Travel Street<br />
+                    Wanderlust City, WL 54321<br />
+                    Explorers Country
+                  </p>
+                </div>
+                
+                <div>
+                  <h3 className="font-semibold text-lg mb-2">Contact Details</h3>
+                  <p className="text-muted-foreground mb-1">
+                    <span className="font-medium">Email:</span> info@travelexplorer.com
+                  </p>
+                  <p className="text-muted-foreground mb-1">
+                    <span className="font-medium">Phone:</span> +1 (555) 123-4567
+                  </p>
+                  <p className="text-muted-foreground mb-1">
+                    <span className="font-medium">Toll Free:</span> 1-800-TRAVELS
+                  </p>
+                </div>
+                
+                <div>
+                  <h3 className="font-semibold text-lg mb-2">Office Hours</h3>
+                  <p className="text-muted-foreground mb-1">
+                    Monday - Friday: 9:00 AM - 6:00 PM
+                  </p>
+                  <p className="text-muted-foreground mb-1">
+                    Saturday: 10:00 AM - 4:00 PM
+                  </p>
+                  <p className="text-muted-foreground mb-1">
+                    Sunday: Closed
+                  </p>
+                </div>
+                
+                <div>
+                  <h3 className="font-semibold text-lg mb-2">Follow Us</h3>
+                  <div className="flex space-x-4">
+                    <a href="#" className="text-gray-600 hover:text-amber-600 transition-colors">
+                      <svg className="h-6 w-6" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M22.675 0h-21.35c-.732 0-1.325.593-1.325 1.325v21.35c0 .732.593 1.325 1.325 1.325h11.495v-9.294h-3.128v-3.622h3.128v-2.671c0-3.1 1.893-4.788 4.659-4.788 1.325 0 2.463.099 2.794.143v3.24l-1.918.001c-1.504 0-1.795.715-1.795 1.763v2.313h3.587l-.467 3.622h-3.12v9.293h6.116c.73 0 1.323-.593 1.323-1.325v-21.35c0-.732-.593-1.325-1.325-1.325z" />
+                      </svg>
+                    </a>
+                    <a href="#" className="text-gray-600 hover:text-amber-600 transition-colors">
+                      <svg className="h-6 w-6" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M12 0c-6.627 0-12 5.373-12 12s5.373 12 12 12 12-5.373 12-12-5.373-12-12-12zm6.066 9.645c.183 4.04-2.83 8.544-8.164 8.544-1.622 0-3.131-.476-4.402-1.291 1.524.18 3.045-.244 4.252-1.189-1.256-.023-2.317-.854-2.684-1.995.451.086.895.061 1.298-.049-1.381-.278-2.335-1.522-2.304-2.853.388.215.83.344 1.301.359-1.279-.855-1.641-2.544-.889-3.835 1.416 1.738 3.533 2.881 5.92 3.001-.419-1.796.944-3.527 2.799-3.527.825 0 1.572.349 2.096.907.654-.128 1.27-.368 1.824-.697-.215.671-.67 1.233-1.263 1.589.581-.07 1.135-.224 1.649-.453-.384.578-.87 1.084-1.433 1.489z" />
+                      </svg>
+                    </a>
+                    <a href="#" className="text-gray-600 hover:text-amber-600 transition-colors">
+                      <svg className="h-6 w-6" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z" />
+                      </svg>
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+      
+      {/* Map Section */}
+      <section className="py-12 bg-muted/30">
+        <div className="container mx-auto px-4">
+          <h2 className="text-2xl font-bold mb-8 text-center">Find Us</h2>
+          <ContactMap />
+        </div>
+      </section>
+      
+      {/* FAQ Section */}
+      <section className="py-16">
+        <div className="container mx-auto px-4">
+          <h2 className="text-2xl font-bold mb-8 text-center">Frequently Asked Questions</h2>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+            <Card>
+              <CardContent className="p-6">
+                <h3 className="font-semibold text-lg mb-2">How do I book a tour?</h3>
+                <p className="text-muted-foreground">
+                  You can book a tour by browsing our destinations, selecting your preferred tour, and clicking the "Book Now" button. Follow the instructions to complete your booking.
+                </p>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardContent className="p-6">
+                <h3 className="font-semibold text-lg mb-2">What payment methods do you accept?</h3>
+                <p className="text-muted-foreground">
+                  We accept all major credit cards, PayPal, and bank transfers. All payments are secure and encrypted.
+                </p>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardContent className="p-6">
+                <h3 className="font-semibold text-lg mb-2">Can I get a refund if I cancel my booking?</h3>
+                <p className="text-muted-foreground">
+                  Our refund policy depends on how far in advance you cancel. Please refer to our cancellation policy for specific details.
+                </p>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardContent className="p-6">
+                <h3 className="font-semibold text-lg mb-2">Do you offer customized tours?</h3>
+                <p className="text-muted-foreground">
+                  Yes, we specialize in creating tailored experiences. Contact our team to discuss your specific requirements and preferences.
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </section>
+    </>
   );
 };
 
