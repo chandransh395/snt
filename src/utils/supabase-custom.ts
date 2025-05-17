@@ -1,6 +1,7 @@
 
 import { createClient } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
+import type { Database } from '@/integrations/supabase/types';
 
 // Security timeout and retry configuration
 const DEFAULT_TIMEOUT = 15000; // 15 seconds
@@ -13,22 +14,12 @@ const AUTH_WINDOW = 60000; // 1 minute
 
 // Enhanced Supabase client with extra security features
 export const supabaseCustom = {
-  ...supabase,
+  // Basic operations
+  from: supabase.from.bind(supabase),
+  rpc: supabase.rpc.bind(supabase),
+  storage: supabase.storage,
   
-  // Add timeout to all requests
-  from: <T = any>(table: string) => {
-    const query = supabase.from<T>(table);
-    
-    // Add secure timeout handling to all query methods
-    const originalSelect = query.select;
-    query.select = function(columns: string) {
-      return addTimeout(originalSelect.call(this, columns), DEFAULT_TIMEOUT);
-    };
-    
-    return query;
-  },
-  
-  // Enhanced auth methods with rate limiting
+  // Auth operations with rate limiting
   auth: {
     ...supabase.auth,
     
@@ -81,27 +72,6 @@ export const supabaseCustom = {
     onAuthStateChange: (...args: any[]) => supabase.auth.onAuthStateChange(...args),
     updateUser: (...args: any[]) => supabase.auth.updateUser(...args),
   },
-  
-  // Enhanced storage with timeout
-  storage: {
-    ...supabase.storage,
-    from: (bucket: string) => {
-      const storageRef = supabase.storage.from(bucket);
-      
-      // Add timeout to upload and download methods
-      const originalUpload = storageRef.upload;
-      storageRef.upload = function(path: string, file: File) {
-        return addTimeout(originalUpload.call(this, path, file), DEFAULT_TIMEOUT * 2);
-      };
-      
-      const originalDownload = storageRef.download;
-      storageRef.download = function(path: string) {
-        return addTimeout(originalDownload.call(this, path), DEFAULT_TIMEOUT * 2);
-      };
-      
-      return storageRef;
-    }
-  }
 };
 
 // Helper functions for security features

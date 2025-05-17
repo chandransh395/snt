@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Navigate } from 'react-router-dom';
@@ -12,7 +13,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from '@/components/ui/badge';
 import { X, Edit, Plus, Trash2 } from 'lucide-react';
-import { supabaseCustom } from '@/utils/supabase-custom';
+import { supabase } from '@/integrations/supabase/client';
 
 type BlogPost = {
   id: number;
@@ -61,7 +62,7 @@ const AdminBlog = () => {
   const fetchBlogPosts = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabaseCustom
+      const { data, error } = await supabase
         .from('blog_posts')
         .select('*')
         .order('published_at', { ascending: false });
@@ -121,7 +122,7 @@ const AdminBlog = () => {
   const handleDeleteBlogPost = async (id: number) => {
     if (confirm('Are you sure you want to delete this blog post?')) {
       try {
-        const { error } = await supabaseCustom
+        const { error } = await supabase
           .from('blog_posts')
           .delete()
           .eq('id', id);
@@ -161,7 +162,7 @@ const AdminBlog = () => {
       const now = new Date().toISOString();
       
       if (isEditing) {
-        const { error } = await supabaseCustom
+        const { error } = await supabase
           .from('blog_posts')
           .update({
             title: currentBlogPost.title,
@@ -172,7 +173,7 @@ const AdminBlog = () => {
             category: currentBlogPost.category,
             tags: currentBlogPost.tags,
           })
-          .eq('id', currentBlogPost.id);
+          .eq('id', currentBlogPost.id!);
           
         if (error) throw error;
         
@@ -181,7 +182,7 @@ const AdminBlog = () => {
           description: 'Blog post updated successfully.',
         });
       } else {
-        const { error } = await supabaseCustom
+        const { error } = await supabase
           .from('blog_posts')
           .insert({
             title: currentBlogPost.title,

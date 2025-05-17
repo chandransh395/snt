@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Navigate } from 'react-router-dom';
@@ -14,7 +15,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { X, Edit, Plus, Trash2 } from 'lucide-react';
 import { formatPrice } from '@/utils/currency';
-import { supabaseCustom } from '@/utils/supabase-custom';
+import { supabase } from '@/integrations/supabase/client';
 
 type Destination = {
   id: number;
@@ -67,7 +68,7 @@ const AdminDestinations = () => {
   const fetchDestinations = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabaseCustom
+      const { data, error } = await supabase
         .from('destinations')
         .select('*')
         .order('id');
@@ -88,7 +89,7 @@ const AdminDestinations = () => {
   
   const fetchTags = async () => {
     try {
-      const { data, error } = await supabaseCustom
+      const { data, error } = await supabase
         .from('tags')
         .select('*')
         .order('name');
@@ -141,7 +142,7 @@ const AdminDestinations = () => {
   const handleDeleteDestination = async (id: number) => {
     if (confirm('Are you sure you want to delete this destination?')) {
       try {
-        const { error } = await supabaseCustom
+        const { error } = await supabase
           .from('destinations')
           .delete()
           .eq('id', id);
@@ -179,7 +180,7 @@ const AdminDestinations = () => {
       }
       
       if (isEditing) {
-        const { error } = await supabaseCustom
+        const { error } = await supabase
           .from('destinations')
           .update({
             name: currentDestination.name,
@@ -189,7 +190,7 @@ const AdminDestinations = () => {
             price: currentDestination.price,
             tags: currentDestination.tags,
           })
-          .eq('id', currentDestination.id);
+          .eq('id', currentDestination.id!);
           
         if (error) throw error;
         
@@ -198,7 +199,7 @@ const AdminDestinations = () => {
           description: 'Destination updated successfully.',
         });
       } else {
-        const { error } = await supabaseCustom
+        const { error } = await supabase
           .from('destinations')
           .insert({
             name: currentDestination.name,

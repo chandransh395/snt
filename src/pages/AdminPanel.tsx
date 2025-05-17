@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
@@ -25,17 +24,24 @@ const AdminPanel = () => {
         setIsLoading(true);
         
         // Fetch counts from different tables
-        const [bookingsResponse, destinationsResponse, blogPostsResponse, profilesResponse] = await Promise.all([
-          fetchTableCount('bookings'),
-          fetchTableCount('destinations'),
-          fetchTableCount('blog_posts'),
-          fetchTableCount('profiles')
-        ]);
+        const fetchTableCount = async (tableName: 'bookings' | 'destinations' | 'blog_posts' | 'profiles') => {
+          const { data, error } = await supabase
+            .from(tableName)
+            .select('count', { count: 'exact', head: true });
+          
+          if (error) throw error;
+          return data?.count || 0;
+        };
+
+        const bookingsCountResult = await fetchTableCount('bookings');
+        const destinationsCountResult = await fetchTableCount('destinations');
+        const blogPostsCountResult = await fetchTableCount('blog_posts');
+        const profilesCountResult = await fetchTableCount('profiles');
         
-        setBookingsCount(bookingsResponse || 0);
-        setDestinationsCount(destinationsResponse || 0);
-        setBlogPostsCount(blogPostsResponse || 0);
-        setUsersCount(profilesResponse || 0);
+        setBookingsCount(bookingsCountResult as number);
+        setDestinationsCount(destinationsCountResult as number);
+        setBlogPostsCount(blogPostsCountResult as number);
+        setUsersCount(profilesCountResult as number);
       } catch (error) {
         console.error('Error fetching dashboard data:', error);
         toast({
@@ -50,22 +56,6 @@ const AdminPanel = () => {
 
     fetchDashboardData();
   }, [toast]);
-
-  const fetchTableCount = async (table: string) => {
-    try {
-      // Update the error variable name
-      const { data, error: countError } = await supabase
-        .from(table)
-        .select('count(*)')
-        .single();
-      
-      if (countError) throw countError;
-      return data?.count;
-    } catch (error) {
-      console.error(`Error fetching ${table} count:`, error);
-      return null;
-    }
-  };
 
   if (!isAdmin) {
     return (

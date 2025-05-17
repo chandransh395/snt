@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Navigate } from 'react-router-dom';
@@ -10,7 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { formatPrice } from '@/utils/currency';
 import { Loader2, Calendar, Mail, Tag, Phone, User } from 'lucide-react';
-import { supabaseCustom } from '@/utils/supabase-custom';
+import { supabase } from '@/integrations/supabase/client';
 
 type Booking = {
   id: string;
@@ -57,7 +58,7 @@ const AdminBookings = () => {
     try {
       setLoading(true);
       
-      let query = supabaseCustom
+      let query = supabase
         .from('bookings')
         .select('*');
         
@@ -93,7 +94,7 @@ const AdminBookings = () => {
     try {
       setUpdating(true);
       
-      const { error } = await supabaseCustom
+      const { error } = await supabase
         .from('bookings')
         .update({ 
           status: newStatus,
