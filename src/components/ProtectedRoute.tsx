@@ -13,7 +13,6 @@ const ProtectedRoute = ({ children, requiresAdmin = false }: ProtectedRouteProps
   const { user, isLoading, isAdmin } = useAuth();
   const [showContent, setShowContent] = useState<ReactNode | null>(null);
   
-  // Always initialize all hooks first before any conditional logic
   useEffect(() => {
     if (isLoading) {
       setShowContent(
@@ -27,8 +26,7 @@ const ProtectedRoute = ({ children, requiresAdmin = false }: ProtectedRouteProps
     } else if (!user) {
       setShowContent(<Navigate to="/auth" />);
     } else if (requiresAdmin && !isAdmin) {
-      // Don't redirect away if there's an admin mismatch,
-      // show an appropriate error message instead
+      // Show an access denied message instead of redirecting
       setShowContent(
         <div className="flex h-screen items-center justify-center">
           <div className="text-center max-w-md mx-auto p-6 bg-white rounded-lg shadow-md">
@@ -46,11 +44,11 @@ const ProtectedRoute = ({ children, requiresAdmin = false }: ProtectedRouteProps
         </div>
       );
     } else {
+      // User is authenticated and has correct permissions
       setShowContent(children);
     }
   }, [isLoading, user, isAdmin, requiresAdmin, children]);
   
-  // Always return something from the component
   return <>{showContent}</>;
 };
 

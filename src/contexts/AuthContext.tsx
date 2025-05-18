@@ -1,3 +1,4 @@
+
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { User, Session } from '@supabase/supabase-js';
@@ -25,6 +26,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   // Function to check user admin status - separated to prevent deadlocks
   const checkUserAdminStatus = async (userId: string) => {
     try {
+      console.log("Checking admin status for user:", userId);
       const { data, error } = await supabase
         .from('user_roles')
         .select('is_admin')
@@ -36,7 +38,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         return;
       }
       
-      setIsAdmin(data?.is_admin || false);
+      const adminStatus = data?.is_admin || false;
+      console.log("Admin status result:", adminStatus);
+      setIsAdmin(adminStatus);
     } catch (error) {
       console.error('Error checking admin status:', error);
       setIsAdmin(false);
@@ -78,13 +82,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           }
         }
         
+        // Finally set loading to false after all checks are done
+        setIsLoading(false);
+        
         // Unsubscribe when component unmounts
         return () => {
           subscription.unsubscribe();
         };
       } catch (error) {
         console.error('Error initializing auth:', error);
-      } finally {
         setIsLoading(false);
       }
     };
