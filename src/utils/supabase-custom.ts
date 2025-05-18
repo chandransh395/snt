@@ -1,5 +1,6 @@
 
 import { Database } from '@/integrations/supabase/types';
+import { supabase } from '@/integrations/supabase/client';
 
 export type SiteSettings = Database['public']['Tables']['site_settings']['Row'];
 
@@ -20,3 +21,6 @@ export interface DestinationWithDetails extends Destination {
 export interface BookingWithDetails extends Booking {
   destination?: Destination;
 }
+
+// Export the typed supabase client
+export const supabaseCustom = supabase;

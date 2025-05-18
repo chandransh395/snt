@@ -1,4 +1,3 @@
-
 // Imports
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
@@ -29,6 +28,7 @@ const AdminSettings = () => {
     social_facebook: '',
     social_instagram: '',
     social_twitter: '',
+    updated_at: new Date().toISOString(), // Added the missing field
   });
   
   const [loading, setLoading] = useState(true);
