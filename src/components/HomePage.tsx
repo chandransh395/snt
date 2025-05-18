@@ -68,8 +68,8 @@ const HomePage = () => {
   // Main JSX structure for the HomePage component
   return (
     <section className="py-16">
-      <div className="container mx-auto">
-        <h2 className="text-3xl font-bold mb-8 text-center">Top Destinations</h2>
+      <div className="container mx-auto text-center">
+        <h2 className="text-3xl font-bold mb-8">Top Destinations</h2>
 
         
         {loading ? (

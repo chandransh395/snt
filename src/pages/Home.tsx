@@ -13,28 +13,28 @@ const Home = () => {
       <section className="relative h-[80vh] min-h-[600px] flex items-center justify-center bg-gray-900 overflow-hidden">
         {/* Background Image */}
         <div className="absolute inset-0 z-0">
-          <img 
-            src="https://images.unsplash.com/photo-1469474968028-56623f02e42e?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80" 
-            alt="Beautiful landscape" 
+          <img
+            src="https://images.unsplash.com/photo-1469474968028-56623f02e42e?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80"
+            alt="Beautiful landscape"
             className="w-full h-full object-cover opacity-60"
           />
         </div>
-        
+
         {/* Hero Content */}
         <div className="relative z-10 text-center px-4 md:px-8 max-w-4xl mx-auto">
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6 animate-slide-up">
             Discover the World's Most Breathtaking Destinations
           </h1>
-          
+
           <p className="text-lg md:text-xl text-white mb-8 opacity-90 animate-slide-up delay-100">
             Your journey begins with us. Experience unforgettable adventures and create memories that last a lifetime.
           </p>
-          
+
           <div className="space-x-4 animate-slide-up delay-200">
-            <Button asChild className="bg-travel-gold hover:bg-amber-600 text-black px-8 py-6">
+            <Button asChild className="bg-travel-gold hover:bg-amber-600 text-black dark:text-white px-8 py-6">
               <Link to="/destinations">Explore Destinations</Link>
             </Button>
-            <Button asChild variant="outline" className="border-white text-white hover:bg-white hover:text-black px-8 py-6">
+            <Button asChild variant="outline" className="border-white bg-white text-black hover:bg-black hover:text-white dark:border-black dark:bg-black dark:text-white dark:hover:bg-white dark:hover:text-black px-8 py-6">
               <Link to="/contact">Contact Us</Link>
             </Button>
           </div>
@@ -43,16 +43,16 @@ const Home = () => {
 
       {/* Top Booked Destinations Section */}
       <HomePage />
-      
+
       {/* Features Section */}
       <section className="py-16 bg-muted/30">
         <div className="container mx-auto px-4">
           <h2 className="text-3xl font-bold text-center mb-12">Why Choose Us</h2>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <Card className="bg-white border-0 shadow-sm hover:shadow-md transition-shadow">
+            <Card className="bg-card text-card-foreground border-border shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300">
               <CardContent className="p-6">
-                <div className="bg-travel-gold/10 w-12 h-12 rounded-full flex items-center justify-center mb-4">
+                <div className="w-12 h-12 rounded-full flex items-center justify-center mb-4 bg-travel-gold/10">
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
@@ -61,8 +61,8 @@ const Home = () => {
                 <p className="text-muted-foreground">Our professional guides ensure an enriching and safe experience throughout your journey.</p>
               </CardContent>
             </Card>
-            
-            <Card className="bg-white border-0 shadow-sm hover:shadow-md transition-shadow">
+
+            <Card className="bg-card text-card-foreground border-border shadow-sm hover:shadow-md hover:scale-[1.01] transition-all duration-300">
               <CardContent className="p-6">
                 <div className="bg-travel-gold/10 w-12 h-12 rounded-full flex items-center justify-center mb-4">
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -73,8 +73,8 @@ const Home = () => {
                 <p className="text-muted-foreground">We offer competitive pricing and valuable packages to ensure maximum value for your money.</p>
               </CardContent>
             </Card>
-            
-            <Card className="bg-white border-0 shadow-sm hover:shadow-md transition-shadow">
+
+            <Card className="bg-card text-card-foreground border-border shadow-sm hover:shadow-md hover:scale-[1.01] transition-all duration-300">
               <CardContent className="p-6">
                 <div className="bg-travel-gold/10 w-12 h-12 rounded-full flex items-center justify-center mb-4">
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -88,14 +88,14 @@ const Home = () => {
           </div>
         </div>
       </section>
-      
+
       {/* Testimonials Section */}
-      <section className="py-16 bg-white">
+      <section className="py-16">
         <div className="container mx-auto px-4">
           <h2 className="text-3xl font-bold text-center mb-12">What Our Travelers Say</h2>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            <Card className="border border-gray-100">
+            <Card className="bg-card text-card-foreground border-border shadow-sm hover:shadow-md hover:scale-[1.01] transition-all duration-300">
               <CardContent className="p-6">
                 <div className="flex gap-2 mb-4">
                   {[1, 2, 3, 4, 5].map((star) => (
@@ -114,8 +114,8 @@ const Home = () => {
                 </div>
               </CardContent>
             </Card>
-            
-            <Card className="border border-gray-100">
+
+            <Card className="bg-card text-card-foreground border-border shadow-sm hover:shadow-md hover:scale-[1.01] transition-all duration-300">
               <CardContent className="p-6">
                 <div className="flex gap-2 mb-4">
                   {[1, 2, 3, 4, 5].map((star) => (
@@ -134,8 +134,8 @@ const Home = () => {
                 </div>
               </CardContent>
             </Card>
-            
-            <Card className="border border-gray-100">
+
+            <Card className="bg-card text-card-foreground border-border shadow-sm hover:shadow-md hover:scale-[1.01] transition-all duration-300">
               <CardContent className="p-6">
                 <div className="flex gap-2 mb-4">
                   {[1, 2, 3, 4, 5].map((star) => (
@@ -157,7 +157,7 @@ const Home = () => {
           </div>
         </div>
       </section>
-      
+
       {/* CTA Section */}
       <section className="py-16 bg-gray-900 text-white">
         <div className="container mx-auto px-4 text-center">

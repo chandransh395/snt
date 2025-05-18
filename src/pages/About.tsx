@@ -183,9 +183,9 @@ const CTA = () => {
         </p>
         <div className="flex flex-wrap justify-center gap-4">
           <Button asChild className="bg-travel-gold hover:bg-amber-600 text-black">
-            <Link to="/contact">Contact Us</Link>
+            <Link to="/contact" className="text-black dark:text-black">Contact Us</Link>
           </Button>
-          <Button asChild variant="outline" className="border-white text-white hover:bg-white/20">
+          <Button asChild variant="outline" className="border-white color:black hover:bg-black hover:text-white dark:border-black dark:bg-black dark:text-white dark:hover:bg-white dark:hover:text-black">
             <Link to="/destinations">Explore Destinations</Link>
           </Button>
         </div>

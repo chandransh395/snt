@@ -297,20 +297,6 @@ const Destinations = () => {
               </CardContent>
             </Card>
           ))}
-          
-          {/* Looking for something else card */}
-          <Card className="overflow-hidden group bg-gradient-to-br from-blue-50 to-indigo-50 border-dashed border-2">
-            <div className="flex flex-col items-center justify-center p-8 h-full text-center">
-              <h3 className="text-xl font-semibold mb-4">Looking for Something Else?</h3>
-              <p className="text-muted-foreground mb-6">
-                Can't find what you're looking for? Our travel experts can help you create a personalized journey.
-              </p>
-              <Mail className="h-12 w-12 text-travel-gold mb-6" />
-              <Button asChild size="lg" className="bg-travel-gold hover:bg-amber-600 text-black">
-                <Link to="/contact">Contact Us</Link>
-              </Button>
-            </div>
-          </Card>
         </div>
       )}
     </div>
