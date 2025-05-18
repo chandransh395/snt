@@ -5,9 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Loader2, Search, X } from "lucide-react";
+import { Slider } from "@/components/ui/slider";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Loader2, Search, X, CalendarRange, Mail } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
-import { supabaseCustom } from "../utils/supabase-custom";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Destination {
   id: number;
@@ -28,6 +30,8 @@ const Destinations = () => {
   const [loading, setLoading] = useState(true);
   const [regions, setRegions] = useState<string[]>([]);
   const [tags, setTags] = useState<string[]>([]);
+  const [duration, setDuration] = useState<number>(3);
+  const [durationType, setDurationType] = useState<string>("days");
   const { toast } = useToast();
 
   useEffect(() => {
@@ -43,7 +47,7 @@ const Destinations = () => {
       setLoading(true);
       
       // Fetch destinations
-      const { data, error } = await supabaseCustom
+      const { data, error } = await supabase
         .from("destinations")
         .select("*")
         .order("name");
@@ -135,8 +139,8 @@ const Destinations = () => {
         </p>
       </div>
 
-      {/* Search and Filter */}
-      <div className="mb-8">
+      {/* Search, Filter and Duration Controls */}
+      <div className="mb-8 space-y-6">
         <div className="relative mb-6">
           <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
           <Input
@@ -154,6 +158,40 @@ const Destinations = () => {
               <X className="h-4 w-4 text-muted-foreground" />
             </button>
           )}
+        </div>
+        
+        {/* Trip Duration Controls */}
+        <div className="bg-muted/30 rounded-lg p-4">
+          <h3 className="text-sm font-medium mb-4 flex items-center">
+            <CalendarRange className="mr-2 h-4 w-4" />
+            Plan Your Trip Duration
+          </h3>
+          
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-center">
+            <div className="col-span-2">
+              <p className="text-sm text-muted-foreground mb-2">Duration: {duration} {durationType}</p>
+              <Slider 
+                value={[duration]} 
+                min={1} 
+                max={30} 
+                step={1} 
+                onValueChange={([value]) => setDuration(value)} 
+              />
+            </div>
+            
+            <div>
+              <Select value={durationType} onValueChange={setDurationType}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select unit" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="days">Days</SelectItem>
+                  <SelectItem value="nights">Nights</SelectItem>
+                  <SelectItem value="weeks">Weeks</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
@@ -181,7 +219,7 @@ const Destinations = () => {
           ))}
         </div>
 
-        <div className="flex flex-wrap items-center gap-2 mt-4">
+        <div className="flex flex-wrap items-center gap-2">
           <span className="text-sm text-muted-foreground mr-2">Tags:</span>
           {tags.map((tag) => (
             <Badge
@@ -253,12 +291,26 @@ const Destinations = () => {
                     <Link to={`/destinations/${destination.id}`}>Details</Link>
                   </Button>
                   <Button asChild className="flex-1 bg-travel-gold hover:bg-amber-600 text-black">
-                    <Link to={`/book/${destination.id}`}>Book Now</Link>
+                    <Link to={`/book/${destination.id}`} state={{ duration, durationType }}>Book {duration} {durationType}</Link>
                   </Button>
                 </div>
               </CardContent>
             </Card>
           ))}
+          
+          {/* Looking for something else card */}
+          <Card className="overflow-hidden group bg-gradient-to-br from-blue-50 to-indigo-50 border-dashed border-2">
+            <div className="flex flex-col items-center justify-center p-8 h-full text-center">
+              <h3 className="text-xl font-semibold mb-4">Looking for Something Else?</h3>
+              <p className="text-muted-foreground mb-6">
+                Can't find what you're looking for? Our travel experts can help you create a personalized journey.
+              </p>
+              <Mail className="h-12 w-12 text-travel-gold mb-6" />
+              <Button asChild size="lg" className="bg-travel-gold hover:bg-amber-600 text-black">
+                <Link to="/contact">Contact Us</Link>
+              </Button>
+            </div>
+          </Card>
         </div>
       )}
     </div>
