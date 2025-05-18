@@ -1,5 +1,5 @@
 
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { User, Session } from '@supabase/supabase-js';
 import { useToast } from '@/components/ui/use-toast';
@@ -16,63 +16,14 @@ type AuthContextType = {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
+export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const { toast } = useToast();
 
-  useEffect(() => {
-    // Set up auth state listener FIRST
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        
-        if (session?.user) {
-          setTimeout(async () => {
-            await checkUserAdminStatus(session.user.id);
-          }, 0);
-        } else {
-          setIsAdmin(false);
-        }
-      }
-    );
-
-    // THEN check for existing session
-    const initializeAuth = async () => {
-      try {
-        setIsLoading(true);
-        const { data: { session } } = await supabase.auth.getSession();
-        
-        if (session) {
-          setSession(session);
-          setUser(session.user);
-          
-          if (session.user) {
-            await checkUserAdminStatus(session.user.id);
-          }
-        }
-      } catch (error) {
-        console.error('Error initializing auth:', error);
-        toast({
-          title: 'Authentication Error',
-          description: 'Failed to initialize authentication.',
-          variant: 'destructive',
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    initializeAuth();
-
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, []);
-
+  // Function to check user admin status - separated to prevent deadlocks
   const checkUserAdminStatus = async (userId: string) => {
     try {
       const { data, error } = await supabase
@@ -89,6 +40,54 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setIsAdmin(false);
     }
   };
+
+  useEffect(() => {
+    // Initialize auth state
+    const initializeAuth = async () => {
+      try {
+        setIsLoading(true);
+        
+        // First, set up auth state listener
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((event, currentSession) => {
+          console.log('Auth state changed:', event, currentSession?.user?.email);
+          setSession(currentSession);
+          setUser(currentSession?.user ?? null);
+          
+          // Use setTimeout to avoid Supabase function call inside the event handler
+          if (currentSession?.user) {
+            setTimeout(() => {
+              checkUserAdminStatus(currentSession.user.id);
+            }, 0);
+          } else {
+            setIsAdmin(false);
+          }
+        });
+
+        // Then check for existing session
+        const { data } = await supabase.auth.getSession();
+        console.log('Initial session check:', data?.session?.user?.email);
+        
+        if (data.session) {
+          setSession(data.session);
+          setUser(data.session.user);
+          
+          if (data.session.user) {
+            await checkUserAdminStatus(data.session.user.id);
+          }
+        }
+        
+        return () => {
+          subscription.unsubscribe();
+        };
+      } catch (error) {
+        console.error('Error initializing auth:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    initializeAuth();
+  }, []);
 
   const signUp = async (email: string, password: string) => {
     try {
