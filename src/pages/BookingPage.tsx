@@ -76,10 +76,16 @@ const BookingPage = () => {
         
         if (!id) throw new Error("Destination ID is required");
         
+        // Fix: Convert string id to number for Supabase query
+        const destinationId = parseInt(id, 10);
+        if (isNaN(destinationId)) {
+          throw new Error("Invalid destination ID");
+        }
+        
         const { data, error } = await supabaseCustom
           .from('destinations')
           .select('*')
-          .eq('id', id)
+          .eq('id', destinationId)
           .single();
           
         if (error) throw error;
