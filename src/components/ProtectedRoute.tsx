@@ -27,8 +27,24 @@ const ProtectedRoute = ({ children, requiresAdmin = false }: ProtectedRouteProps
     } else if (!user) {
       setShowContent(<Navigate to="/auth" />);
     } else if (requiresAdmin && !isAdmin) {
-      // Don't redirect admins away from admin panel
-      setShowContent(<Navigate to="/" />);
+      // Don't redirect away if there's an admin mismatch,
+      // show an appropriate error message instead
+      setShowContent(
+        <div className="flex h-screen items-center justify-center">
+          <div className="text-center max-w-md mx-auto p-6 bg-white rounded-lg shadow-md">
+            <h2 className="text-xl font-semibold text-red-600 mb-3">Access Restricted</h2>
+            <p className="text-gray-700 mb-4">
+              You don't have admin permissions to access this area.
+            </p>
+            <button 
+              onClick={() => window.location.href = '/'}
+              className="px-4 py-2 bg-travel-gold text-black rounded hover:bg-amber-600 transition-colors"
+            >
+              Return to Home
+            </button>
+          </div>
+        </div>
+      );
     } else {
       setShowContent(children);
     }

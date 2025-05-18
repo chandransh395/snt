@@ -1,4 +1,3 @@
-
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { User, Session } from '@supabase/supabase-js';
@@ -32,7 +31,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         .eq('user_id', userId)
         .maybeSingle();
       
-      if (error) throw error;
+      if (error) {
+        console.error('Error checking admin status:', error);
+        return;
+      }
       
       setIsAdmin(data?.is_admin || false);
     } catch (error) {
@@ -76,6 +78,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           }
         }
         
+        // Unsubscribe when component unmounts
         return () => {
           subscription.unsubscribe();
         };
