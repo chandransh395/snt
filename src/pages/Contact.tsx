@@ -7,6 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent } from '@/components/ui/card';
 import { Loader2 } from 'lucide-react';
 import ContactMap from '@/components/ContactMap';
+import ContactInfo from '@/components/ContactInfo';
 
 const Contact = () => {
   const { toast } = useToast();
@@ -173,42 +174,8 @@ const Contact = () => {
             {/* Contact Information */}
             <div>
               <h2 className="text-2xl font-bold mb-6">Contact Information</h2>
-              
               <div className="space-y-6">
-                <div>
-                  <h3 className="font-semibold text-lg mb-2">Office Address</h3>
-                  <p className="text-muted-foreground">
-                    123 Travel Street<br />
-                    Wanderlust City, WL 54321<br />
-                    Explorers Country
-                  </p>
-                </div>
-                
-                <div>
-                  <h3 className="font-semibold text-lg mb-2">Contact Details</h3>
-                  <p className="text-muted-foreground mb-1">
-                    <span className="font-medium">Email:</span> info@travelexplorer.com
-                  </p>
-                  <p className="text-muted-foreground mb-1">
-                    <span className="font-medium">Phone:</span> +1 (555) 123-4567
-                  </p>
-                  <p className="text-muted-foreground mb-1">
-                    <span className="font-medium">Toll Free:</span> 1-800-TRAVELS
-                  </p>
-                </div>
-                
-                <div>
-                  <h3 className="font-semibold text-lg mb-2">Office Hours</h3>
-                  <p className="text-muted-foreground mb-1">
-                    Monday - Friday: 9:00 AM - 6:00 PM
-                  </p>
-                  <p className="text-muted-foreground mb-1">
-                    Saturday: 10:00 AM - 4:00 PM
-                  </p>
-                  <p className="text-muted-foreground mb-1">
-                    Sunday: Closed
-                  </p>
-                </div>
+                <ContactInfo />
                 
                 <div>
                   <h3 className="font-semibold text-lg mb-2">Follow Us</h3>

@@ -43,7 +43,7 @@ const ContactMap = () => {
   if (settings?.google_map_iframe) {
     return (
       <div 
-        className="w-full h-[400px] md:h-[500px] overflow-hidden rounded-lg shadow-md"
+        className="w-full h-[400px] md:h-[500px] overflow-hidden rounded-lg shadow-md" 
         dangerouslySetInnerHTML={{ __html: settings.google_map_iframe }}
       />
     );

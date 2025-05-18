@@ -89,7 +89,7 @@ const TagsRegionsManager = () => {
 
     try {
       const { error } = await supabase
-        .from(activeTab)
+        .from(activeTab as 'tags' | 'regions')
         .delete()
         .eq('id', id);
         
@@ -140,7 +140,7 @@ const TagsRegionsManager = () => {
       
       if (isEditing) {
         const { error } = await supabase
-          .from(activeTab)
+          .from(activeTab as 'tags' | 'regions')
           .update(currentItem)
           .eq('id', currentItem.id!);
           
@@ -152,7 +152,7 @@ const TagsRegionsManager = () => {
         });
       } else {
         const { error } = await supabase
-          .from(activeTab)
+          .from(activeTab as 'tags' | 'regions')
           .insert(currentItem);
           
         if (error) throw error;
