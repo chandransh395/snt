@@ -1,5 +1,3 @@
-
-// Import the ImageUploader and ReactMarkdown components
 import ImageUploader from '@/components/blog/ImageUploader';
 import ReactMarkdown from 'react-markdown';
 
@@ -33,6 +31,9 @@ import ReactMarkdown from 'react-markdown';
 <div className="mt-6 pt-6 border-t">
   <ImageUploader 
     onImagesUploaded={(urls) => {
+      if (!Array.isArray(urls)) {
+        return;
+      }
       // Insert image URLs at cursor position or append to content
       const contentWithImages = currentBlogPost.content + '\n\n' + 
         urls.map(url => `![Image](${url})`).join('\n\n');
