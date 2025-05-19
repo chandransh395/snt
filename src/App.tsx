@@ -1,4 +1,4 @@
-import { Route } from "react-router-dom";
+import { Route, Routes } from "react-router-dom";
 import AdminLayout from '@/components/admin/AdminLayout';
 import AdminPanel from '@/pages/AdminPanel';
 import UserManagement from '@/components/admin/UserManagement';
@@ -10,14 +10,16 @@ import ProtectedRoute from '@/components/ProtectedRoute';
 
 function App() {
   return (
-    <Route path="/admin" element={<ProtectedRoute><AdminLayout /></ProtectedRoute>}>
-      <Route index element={<AdminPanel />} />
-      <Route path="users" element={<UserManagement />} />
-      <Route path="destinations" element={<AdminDestinations />} />
-      <Route path="bookings" element={<AdminBookings />} />
-      <Route path="blog" element={<AdminBlog />} />
-      <Route path="settings" element={<AdminSettings />} />
-    </Route>
+    <Routes>
+      <Route path="/admin" element={<ProtectedRoute><AdminLayout /></ProtectedRoute>}>
+        <Route index element={<AdminPanel />} />
+        <Route path="users" element={<UserManagement />} />
+        <Route path="destinations" element={<AdminDestinations />} />
+        <Route path="bookings" element={<AdminBookings />} />
+        <Route path="blog" element={<AdminBlog />} />
+        <Route path="settings" element={<AdminSettings />} />
+      </Route>
+    </Routes>
   );
 }
 
