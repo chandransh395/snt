@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -42,13 +43,15 @@ const UserManagement = () => {
         
         // First check if current user is super admin
         if (user) {
-          const { data: superAdminData, error } = await supabase
+          const { data: superAdminData, error: superAdminError } = await supabase
             .from('user_roles')
             .select('is_super_admin')
             .eq('user_id', user.id)
             .single();
             
-          setIsSuperAdmin(superAdminData?.is_super_admin || false);
+          if (!superAdminError && superAdminData) {
+            setIsSuperAdmin(superAdminData.is_super_admin || false);
+          }
         }
         
         // Fetch all users with their roles

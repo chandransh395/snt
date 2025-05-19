@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -182,13 +181,15 @@ const Blog = () => {
                   </CardContent>
                   
                   <CardFooter className="mt-auto pt-4">
-                    <Button 
-                      variant="outline" 
-                      className="w-full border-travel-gold text-travel-gold hover:bg-travel-gold hover:text-white group"
-                    >
-                      Read More
-                      <ArrowRight className="h-4 w-4 ml-2 transition-transform group-hover:translate-x-1" />
-                    </Button>
+                    <Link to={`/blog/${post.id}`} className="w-full">
+                      <Button 
+                        variant="outline" 
+                        className="w-full border-travel-gold text-travel-gold hover:bg-travel-gold hover:text-white group"
+                      >
+                        Read More
+                        <ArrowRight className="h-4 w-4 ml-2 transition-transform group-hover:translate-x-1" />
+                      </Button>
+                    </Link>
                   </CardFooter>
                 </Card>
               </motion.div>
