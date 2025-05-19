@@ -1,9 +1,31 @@
+
+import { useState } from 'react';
 import ImageUploader from '@/components/blog/ImageUploader';
 import ReactMarkdown from 'react-markdown';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { useToast } from '@/components/ui/use-toast';
 
 const AdminBlog = () => {
+  const { toast } = useToast();
+  const [currentBlogPost, setCurrentBlogPost] = useState({
+    title: '',
+    content: '',
+    image: '',
+    author: '',
+    category: '',
+    excerpt: '',
+    tags: [] as string[]
+  });
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setCurrentBlogPost((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
   return (
     <div className="space-y-2">
       <Label htmlFor="content">Content</Label>
