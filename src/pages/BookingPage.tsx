@@ -129,8 +129,14 @@ const BookingPage = () => {
         description: 'Your booking has been submitted.',
       });
       
-      // Increment bookings_count for this destination
-      await supabase.rpc('increment_bookings', { destination_id: destination.id });
+      // Increment bookings_count for this destination using rpc
+      const { error: rpcError } = await supabase.rpc('increment_bookings', { 
+        destination_id: destination.id 
+      });
+      
+      if (rpcError) {
+        console.error('Error incrementing booking count:', rpcError);
+      }
       
       // Redirect to success page
       navigate('/booking-success');

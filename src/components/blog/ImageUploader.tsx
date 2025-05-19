@@ -111,6 +111,13 @@ const ImageUploader = ({ onImagesUploaded }: ImageUploaderProps) => {
     return <FileText className="h-6 w-6" />;
   };
 
+  const triggerFileInput = () => {
+    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+    if (fileInput) {
+      fileInput.click();
+    }
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -142,7 +149,7 @@ const ImageUploader = ({ onImagesUploaded }: ImageUploaderProps) => {
             type="button" 
             variant="secondary" 
             className="mt-4"
-            onClick={() => document.querySelector('input[type="file"]')?.click()}
+            onClick={triggerFileInput}
           >
             Select Files
           </Button>

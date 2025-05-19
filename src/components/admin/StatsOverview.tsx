@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { DollarSign, MapPin, TrendingUp, Users } from 'lucide-react';
@@ -76,26 +77,26 @@ const StatsOverview = () => {
         // Fetch total destinations
         const { data: destinations, error: destError } = await supabase
           .from('destinations')
-          .select('count(*)');
+          .select('*');
 
         if (destError) throw destError;
-        setTotalDestinations(destinations ? destinations[0].count : 0);
+        setTotalDestinations(destinations ? destinations.length : 0);
 
         // Fetch total bookings
         const { data: bookings, error: bookingError } = await supabase
           .from('bookings')
-          .select('count(*)');
+          .select('*');
 
         if (bookingError) throw bookingError;
-        setTotalBookings(bookings ? bookings[0].count : 0);
+        setTotalBookings(bookings ? bookings.length : 0);
 
         // Fetch total users
         const { data: users, error: userError } = await supabase
           .from('profiles')
-          .select('count(*)');
+          .select('*');
 
         if (userError) throw userError;
-        setTotalUsers(users ? users[0].count : 0);
+        setTotalUsers(users ? users.length : 0);
 
         // Fetch top regions
         const { data: regions, error: regionError } = await supabase
