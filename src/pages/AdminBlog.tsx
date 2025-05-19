@@ -44,3 +44,5 @@ import ReactMarkdown from 'react-markdown';
     }}
   />
 </div>
+
+export default ReactMarkdown
