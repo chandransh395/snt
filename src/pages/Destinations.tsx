@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -140,7 +139,7 @@ const Destinations = () => {
               <SelectValue placeholder="All Regions" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All Regions</SelectItem>
+              <SelectItem value="all-regions">All Regions</SelectItem>
               {regions.map((region) => (
                 <SelectItem key={region.value} value={region.value}>
                   {region.label}

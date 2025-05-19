@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -18,12 +19,28 @@ const AdminPanel = () => {
       </header>
       
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Sidebar is moved to AdminLayout.tsx */}
-        
         {/* Main Content */}
         <div className="lg:col-span-12">
-          {activeTab === 'dashboard' && <StatsOverview />}
-          {activeTab === 'users' && <UserManagement />}
+          <Tabs defaultValue="dashboard" onValueChange={value => setActiveTab(value)}>
+            <TabsList className="mb-6">
+              <TabsTrigger value="dashboard" className="flex items-center gap-2">
+                <ChartBar className="h-4 w-4" />
+                <span>Dashboard</span>
+              </TabsTrigger>
+              <TabsTrigger value="users" className="flex items-center gap-2">
+                <Settings className="h-4 w-4" />
+                <span>Users</span>
+              </TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="dashboard">
+              <StatsOverview />
+            </TabsContent>
+            
+            <TabsContent value="users">
+              <UserManagement />
+            </TabsContent>
+          </Tabs>
         </div>
       </div>
     </div>

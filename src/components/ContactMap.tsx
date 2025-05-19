@@ -13,14 +13,46 @@ const ContactMap = () => {
     const fetchSettings = async () => {
       try {
         setLoading(true);
-        const { data, error } = await supabase
-          .from('site_settings')
-          .select('google_maps_url, google_map_iframe')
-          .single();
-          
-        if (error) throw error;
         
-        setSettings(data as SiteSettings);
+        // First check if settings record exists
+        const { data: existingSettings, error: checkError } = await supabase
+          .from('site_settings')
+          .select('*');
+          
+        if (checkError) throw checkError;
+        
+        if (!existingSettings || existingSettings.length === 0) {
+          // Create initial settings with our Google Maps iframe
+          const { data, error } = await supabase
+            .from('site_settings')
+            .insert({
+              google_maps_url: 'https://maps.app.goo.gl/vjUQHrxXW6thkx3F9',
+              google_map_iframe: '<iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3506.2233912262824!2d77.2821739749634!3d28.501450493278!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x390ce626851f7009%3A0x621185133cfd1ad1!2sRadha%20Krishna%20Mandir!5e0!3m2!1sen!2sin!4v1715963358983!5m2!1sen!2sin" width="100%" height="500" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>',
+              email: 'contact@travelbooking.com',
+              phone: '+91 98765 43210',
+              address: 'Radha Krishna Mandir, Surajkund, Faridabad, Haryana 121009, India',
+              office_hours: 'Mon-Fri: 9AM-6PM, Sat: 10AM-2PM'
+            })
+            .select('*')
+            .single();
+            
+          if (error) throw error;
+          setSettings(data as SiteSettings);
+        } else {
+          // Update existing settings with our Google Maps iframe
+          const { data, error } = await supabase
+            .from('site_settings')
+            .update({
+              google_maps_url: 'https://maps.app.goo.gl/vjUQHrxXW6thkx3F9',
+              google_map_iframe: '<iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3506.2233912262824!2d77.2821739749634!3d28.501450493278!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x390ce626851f7009%3A0x621185133cfd1ad1!2sRadha%20Krishna%20Mandir!5e0!3m2!1sen!2sin!4v1715963358983!5m2!1sen!2sin" width="100%" height="500" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>'
+            })
+            .eq('id', existingSettings[0].id)
+            .select('*')
+            .single();
+            
+          if (error) throw error;
+          setSettings(data as SiteSettings);
+        }
       } catch (error) {
         console.error('Error fetching map settings:', error);
       } finally {
@@ -62,7 +94,7 @@ const ContactMap = () => {
           <div 
             className="w-full h-full bg-cover bg-center"
             style={{ 
-              backgroundImage: "url('https://maps.googleapis.com/maps/api/staticmap?center=Your+Location&zoom=13&size=1000x1000&maptype=roadmap&key=YOUR_API_KEY')",
+              backgroundImage: "url('https://maps.googleapis.com/maps/api/staticmap?center=Radha+Krishna+Mandir&zoom=13&size=1000x1000&maptype=roadmap')",
               backgroundSize: 'cover',
               backgroundPosition: 'center'
             }}
