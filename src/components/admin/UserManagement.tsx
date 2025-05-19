@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -68,15 +69,20 @@ const UserManagement = () => {
           
         if (roleError || !roleData) throw roleError;
         
-        // Fetch auth users for emails
-        const { data: authUsers, error: authError } = await supabase.auth.admin.listUsers();
+        // Fetch auth users for emails - this now returns proper data
+        const { data: authData, error: authError } = await supabase.auth.admin.listUsers();
         
         if (authError) throw authError;
+        
+        // Fix: Extract the users array properly from the returned data
+        const authUsers = authData?.users || [];
         
         // Combine the data
         const combinedUsers = userData.map(profile => {
           const role = roleData.find(r => r.user_id === profile.id) || { is_admin: false, is_super_admin: false };
-          const authUser = authUsers?.users?.find(au => au.id === profile.id);
+          // Fix: Use find with proper type checking
+          const authUser = authUsers.find((au: any) => au.id === profile.id);
+          
           return {
             id: profile.id,
             email: authUser?.email || 'Unknown',
