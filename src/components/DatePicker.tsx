@@ -16,8 +16,13 @@ interface DatePickerProps {
   name?: string;
   selected: Date | null;
   onChange: (date: Date | null) => void;
+  onSelect?: (date: Date | null) => void; // Add this for backward compatibility
   placeholder?: string;
   disabled?: boolean;
+  minDate?: Date;
+  className?: string;
+  showIcon?: boolean;
+  icon?: React.ReactNode;
 }
 
 export function DatePicker({
@@ -25,9 +30,20 @@ export function DatePicker({
   name,
   selected,
   onChange,
+  onSelect,
   placeholder = "Select a date",
   disabled = false,
+  minDate,
+  className,
+  showIcon = false,
+  icon,
 }: DatePickerProps) {
+  const handleDateSelect = (date: Date | null) => {
+    // Call both handlers for backward compatibility
+    if (onChange) onChange(date);
+    if (onSelect) onSelect(date);
+  };
+
   return (
     <Popover>
       <PopoverTrigger asChild>
@@ -37,11 +53,12 @@ export function DatePicker({
           variant={"outline"}
           className={cn(
             "w-full justify-start text-left font-normal",
-            !selected && "text-muted-foreground"
+            !selected && "text-muted-foreground",
+            className
           )}
           disabled={disabled}
         >
-          <CalendarIcon className="mr-2 h-4 w-4" />
+          {showIcon && (icon ? icon : <CalendarIcon className="mr-2 h-4 w-4" />)}
           {selected ? format(selected, "PPP") : <span>{placeholder}</span>}
         </Button>
       </PopoverTrigger>
@@ -49,7 +66,8 @@ export function DatePicker({
         <Calendar
           mode="single"
           selected={selected}
-          onSelect={onChange}
+          onSelect={handleDateSelect}
+          disabled={minDate ? { before: minDate } : undefined}
           initialFocus
           className={cn("p-3 pointer-events-auto")}
         />
