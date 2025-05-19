@@ -2,6 +2,7 @@
 /**
  * Custom types for Supabase
  */
+import { createClient } from '@supabase/supabase-js';
 
 export type SiteSettings = {
   id: number;
@@ -124,6 +125,41 @@ export interface Database {
           price?: number;
         };
       };
+      blog_posts: {
+        Row: {
+          id: number;
+          title: string;
+          content: string;
+          excerpt: string;
+          author: string;
+          image: string;
+          published_at: string;
+          category: string;
+          tags: string[];
+        };
+        Insert: {
+          id?: number;
+          title: string;
+          content: string;
+          excerpt?: string;
+          author: string;
+          image: string;
+          published_at?: string;
+          category?: string;
+          tags?: string[];
+        };
+        Update: {
+          id?: number;
+          title?: string;
+          content?: string;
+          excerpt?: string;
+          author?: string;
+          image?: string;
+          published_at?: string;
+          category?: string;
+          tags?: string[];
+        };
+      };
     };
     Views: {
       [_ in never]: never;
@@ -143,3 +179,13 @@ export interface Database {
     };
   };
 }
+
+// Create a Supabase client instance for use in non-provider components
+const SUPABASE_URL = "https://bgcegarmliqfvimmsupq.supabase.co";
+const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJnY2VnYXJtbGlxZnZpbW1zdXBxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDcyOTU4MTcsImV4cCI6MjA2Mjg3MTgxN30.3NU-T9sIWAZaS_Kr2ivGmVnCZVAlY6RSedJpDylX12Y";
+
+export const supabaseCustom = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+  db: {
+    schema: 'public',
+  },
+});
