@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import ContactInfo from "./ContactInfo";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import type { SiteSettings } from "@/utils/supabase-custom";
+import PopularDestinations from "./PopularDestinations";
 
 const Footer = () => {
   const currentYear = new Date().getFullYear();
@@ -84,13 +84,7 @@ const Footer = () => {
           
           <div>
             <h4 className="text-lg font-semibold mb-6">Popular Destinations</h4>
-            <ul className="space-y-3">
-              <li><a href="#" className="text-gray-300 hover:text-travel-gold transition-colors">Santorini, Greece</a></li>
-              <li><a href="#" className="text-gray-300 hover:text-travel-gold transition-colors">Kyoto, Japan</a></li>
-              <li><a href="#" className="text-gray-300 hover:text-travel-gold transition-colors">Bali, Indonesia</a></li>
-              <li><a href="#" className="text-gray-300 hover:text-travel-gold transition-colors">Amalfi Coast, Italy</a></li>
-              <li><a href="#" className="text-gray-300 hover:text-travel-gold transition-colors">Machu Picchu, Peru</a></li>
-            </ul>
+            <PopularDestinations />
           </div>
           
           <div>

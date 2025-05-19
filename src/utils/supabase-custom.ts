@@ -1,26 +1,87 @@
 
-import { Database } from '@/integrations/supabase/types';
-import { supabase } from '@/integrations/supabase/client';
+import { createClient } from '@supabase/supabase-js';
+
+const SUPABASE_URL = "https://bgcegarmliqfvimmsupq.supabase.co";
+const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJnY2VnYXJtbGlxZnZpbW1zdXBxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDcyOTU4MTcsImV4cCI6MjA2Mjg3MTgxN30.3NU-T9sIWAZaS_Kr2ivGmVnCZVAlY6RSedJpDylX12Y";
+
+export interface Database {
+  public: {
+    Tables: {
+      profiles: {
+        Row: {
+          id: string;
+          username: string | null;
+          avatar_url: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id: string;
+          username?: string | null;
+          avatar_url?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          username?: string | null;
+          avatar_url?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
+      user_roles: {
+        Row: {
+          id: string;
+          user_id: string;
+          is_admin: boolean;
+          is_super_admin: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          is_admin?: boolean;
+          is_super_admin?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          is_admin?: boolean;
+          is_super_admin?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
+      site_settings: {
+        Row: {
+          id: number;
+          email: string;
+          phone: string;
+          address: string;
+          office_hours: string;
+          google_maps_url: string;
+          google_map_iframe: string | null;
+          social_facebook: string | null;
+          social_twitter: string | null;
+          social_instagram: string | null;
+          updated_at: string | null;
+        };
+      };
+    };
+    Functions: {
+      increment_bookings: {
+        Args: { destination_id: number };
+        Returns: void;
+      };
+    };
+  };
+}
+
+// Create a client with limited functionality for safer public-facing operations
+export const supabaseCustom = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
 
 export type SiteSettings = Database['public']['Tables']['site_settings']['Row'];
-
-// Type definitions that match the Database types from Supabase
-export type Tag = Database['public']['Tables']['tags']['Row'];
-export type Region = Database['public']['Tables']['regions']['Row'];
-export type User = Database['public']['Tables']['profiles']['Row'];
-export type UserRole = Database['public']['Tables']['user_roles']['Row'];
-export type Destination = Database['public']['Tables']['destinations']['Row'];
-export type Booking = Database['public']['Tables']['bookings']['Row'];
-export type BlogPost = Database['public']['Tables']['blog_posts']['Row'];
-
-// Extend types as needed for frontend purposes
-export interface DestinationWithDetails extends Destination {
-  isPopular?: boolean;
-}
-
-export interface BookingWithDetails extends Booking {
-  destination?: Destination;
-}
-
-// Export the typed supabase client
-export const supabaseCustom = supabase;

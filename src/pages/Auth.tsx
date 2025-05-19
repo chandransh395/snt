@@ -1,548 +1,302 @@
 
 import { useState, useEffect } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Navigate, useSearchParams } from 'react-router-dom';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from '@/components/ui/use-toast';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { useForm } from 'react-hook-form';
-import * as z from 'zod';
-import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
-import { Loader2, AlertCircle } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import { Mail, Lock, ArrowRight, Loader2 } from 'lucide-react';
 
-const PASSWORD_MIN_LENGTH = 8;
-const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]).{8,}$/;
-const PASSWORD_ERROR_MESSAGE = `Password must be at least ${PASSWORD_MIN_LENGTH} characters and include uppercase, lowercase, number, and special character`;
-
+// Form validation schemas
 const loginSchema = z.object({
-  email: z.string().email('Please enter a valid email'),
-  password: z.string().min(PASSWORD_MIN_LENGTH, `Password must be at least ${PASSWORD_MIN_LENGTH} characters`)
+  email: z.string().email({ message: "Please enter a valid email address" }),
+  password: z.string().min(6, { message: "Password must be at least 6 characters" }),
 });
 
-const registerSchema = z.object({
-  email: z.string().email('Please enter a valid email'),
-  password: z.string().min(PASSWORD_MIN_LENGTH, PASSWORD_ERROR_MESSAGE).regex(PASSWORD_REGEX, PASSWORD_ERROR_MESSAGE),
-  confirmPassword: z.string().min(PASSWORD_MIN_LENGTH, `Password must be at least ${PASSWORD_MIN_LENGTH} characters`)
+const signupSchema = z.object({
+  email: z.string().email({ message: "Please enter a valid email address" }),
+  password: z.string().min(8, { message: "Password must be at least 8 characters" }),
+  confirmPassword: z.string(),
 }).refine((data) => data.password === data.confirmPassword, {
-  message: "Passwords don't match",
+  message: "Passwords do not match",
   path: ["confirmPassword"],
 });
 
-const forgotPasswordSchema = z.object({
-  email: z.string().email('Please enter a valid email')
-});
+type LoginFormValues = z.infer<typeof loginSchema>;
+type SignupFormValues = z.infer<typeof signupSchema>;
 
-const resetPasswordSchema = z.object({
-  otp: z.string().min(6, 'OTP must be 6 digits'),
-  password: z.string().min(PASSWORD_MIN_LENGTH, PASSWORD_ERROR_MESSAGE).regex(PASSWORD_REGEX, PASSWORD_ERROR_MESSAGE),
-  confirmPassword: z.string().min(PASSWORD_MIN_LENGTH, `Password must be at least ${PASSWORD_MIN_LENGTH} characters`)
-}).refine((data) => data.password === data.confirmPassword, {
-  message: "Passwords don't match",
-  path: ["confirmPassword"],
-});
+const AuthPage = () => {
+  const { signIn, signUp, user, isLoading } = useAuth();
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const [searchParams] = useSearchParams();
+  const [activeTab, setActiveTab] = useState(searchParams.get('mode') === 'signup' ? 'signup' : 'login');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-const Auth = () => {
-  const loginForm = useForm<z.infer<typeof loginSchema>>({
+  // Get the redirect parameter from URL
+  const redirectParam = searchParams.get('redirect');
+
+  // For login form
+  const loginForm = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
       email: '',
       password: ''
-    }
+    },
   });
 
-  const registerForm = useForm<z.infer<typeof registerSchema>>({
-    resolver: zodResolver(registerSchema),
+  // For signup form
+  const signupForm = useForm<SignupFormValues>({
+    resolver: zodResolver(signupSchema),
     defaultValues: {
       email: '',
       password: '',
       confirmPassword: ''
-    }
+    },
   });
 
-  const forgotPasswordForm = useForm<z.infer<typeof forgotPasswordSchema>>({
-    resolver: zodResolver(forgotPasswordSchema),
-    defaultValues: {
-      email: ''
-    }
-  });
-
-  const { user, signIn, signUp } = useAuth();
-  const [isLoading, setIsLoading] = useState(false);
-  const [searchParams] = useSearchParams();
-  const tabParam = searchParams.get('tab');
-  const [activeTab, setActiveTab] = useState(tabParam === 'reset' ? 'forgot' : (tabParam || 'login'));
-  const [forgotPasswordEmail, setForgotPasswordEmail] = useState('');
-  const [otpAttempts, setOtpAttempts] = useState(0);
-  const [showOtpForm, setShowOtpForm] = useState(false);
-  const [passwordResetToken, setPasswordResetToken] = useState('');
-  const { toast } = useToast();
-
-  const resetPasswordForm = useForm<z.infer<typeof resetPasswordSchema>>({
-    resolver: zodResolver(resetPasswordSchema),
-    defaultValues: {
-      otp: '',
-      password: '',
-      confirmPassword: ''
-    }
-  });
-  
+  // Redirect if user is already logged in
   useEffect(() => {
-    // Check for password reset token in URL
-    const hash = window.location.hash;
-    if (hash.includes('type=recovery')) {
-      const token = new URLSearchParams(hash.substring(1)).get('access_token');
-      if (token) {
-        setPasswordResetToken(token);
-        setActiveTab('forgot');
-        setShowOtpForm(true);
-        toast({
-          title: 'Password Reset',
-          description: 'Please enter a new password.',
-        });
+    if (user && !isLoading) {
+      // Check for pending booking in session storage
+      const pendingBooking = sessionStorage.getItem('pendingBooking');
+      if (redirectParam === 'booking' && pendingBooking) {
+        const bookingData = JSON.parse(pendingBooking);
+        sessionStorage.removeItem('pendingBooking');
+        navigate(`/book/${bookingData.id}`);
+      } else {
+        navigate('/'); 
       }
     }
-  }, [toast]);
-  
-  // If user is already logged in, redirect to home page
-  if (user) {
-    return <Navigate to="/" />;
-  }
+  }, [user, isLoading, navigate, redirectParam]);
 
-  const handleLogin = async (data: z.infer<typeof loginSchema>) => {
-    setIsLoading(true);
+  // Handle login submission
+  const onLoginSubmit = async (data: LoginFormValues) => {
     try {
+      setIsSubmitting(true);
       await signIn(data.email, data.password);
+      // The redirect is handled by the useEffect above
     } catch (error: any) {
-      console.error('Login error:', error);
+      console.error("Login error:", error);
       toast({
-        title: 'Login failed',
-        description: error.message || 'Please check your credentials and try again',
-        variant: 'destructive'
+        title: "Login failed",
+        description: error.message || "Please check your credentials and try again",
+        variant: "destructive",
       });
     } finally {
-      setIsLoading(false);
+      setIsSubmitting(false);
     }
   };
 
-  const handleRegister = async (data: z.infer<typeof registerSchema>) => {
-    setIsLoading(true);
+  // Handle signup submission
+  const onSignupSubmit = async (data: SignupFormValues) => {
     try {
+      setIsSubmitting(true);
       await signUp(data.email, data.password);
       toast({
-        title: 'Account created',
-        description: 'Please check your email for verification',
+        title: "Sign up successful!",
+        description: "Please check your email to verify your account.",
       });
-    } catch (error: any) {
-      console.error('Registration error:', error);
-      toast({
-        title: 'Registration failed',
-        description: error.message || 'Please try again later',
-        variant: 'destructive'
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleForgotPassword = async (data: z.infer<typeof forgotPasswordSchema>) => {
-    setIsLoading(true);
-    try {
-      // Send password reset email using Supabase
-      const { error } = await supabase.auth.resetPasswordForEmail(data.email, {
-        redirectTo: `${window.location.origin}/auth?tab=reset`,
-      });
-      
-      if (error) throw error;
-      
-      setForgotPasswordEmail(data.email);
-      setShowOtpForm(true);
-      
-      toast({
-        title: 'Reset email sent',
-        description: 'Please check your email for the recovery link',
-      });
-    } catch (error: any) {
-      console.error('Forgot password error:', error);
-      toast({
-        title: 'Failed to send reset email',
-        description: error.message || 'Please try again later',
-        variant: 'destructive'
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleResetPassword = async (data: z.infer<typeof resetPasswordSchema>) => {
-    if (otpAttempts >= 5) {
-      toast({
-        title: 'Too many attempts',
-        description: 'You have exceeded the maximum number of attempts. Please request a new OTP.',
-        variant: 'destructive'
-      });
-      return;
-    }
-
-    setIsLoading(true);
-    try {
-      // In a real implementation we would verify the OTP
-      // Here we're using Supabase's token-based reset
-      setOtpAttempts(prev => prev + 1);
-
-      // Check for previous password changes
-      const today = new Date();
-      const todayKey = `${today.getFullYear()}-${today.getMonth()}-${today.getDate()}`;
-      const passwordChanges = localStorage.getItem(`password_changes_${forgotPasswordEmail}_${todayKey}`);
-      const changes = passwordChanges ? parseInt(passwordChanges) : 0;
-
-      if (changes >= 2) {
-        toast({
-          title: 'Password change limit reached',
-          description: 'You can only change your password twice in a day',
-          variant: 'destructive'
-        });
-        setIsLoading(false);
-        return;
-      }
-
-      // Update password - using token if available, otherwise regular update
-      const { error } = passwordResetToken ? 
-        await supabase.auth.updateUser({
-          password: data.password
-        }) :
-        await supabase.auth.updateUser({ 
-          password: data.password 
-        });
-      
-      if (error) throw error;
-
-      // Update the counter for password changes
-      localStorage.setItem(`password_changes_${forgotPasswordEmail}_${todayKey}`, (changes + 1).toString());
-      
-      toast({
-        title: 'Password updated',
-        description: 'Your password has been successfully reset',
-      });
-      
-      // Reset state and move back to login
-      setShowOtpForm(false);
       setActiveTab('login');
-      setPasswordResetToken('');
     } catch (error: any) {
-      console.error('Reset password error:', error);
+      console.error("Signup error:", error);
       toast({
-        title: 'Failed to reset password',
-        description: error.message || 'Please try again later',
-        variant: 'destructive'
+        title: "Sign up failed",
+        description: error.message || "An error occurred during sign up.",
+        variant: "destructive",
       });
     } finally {
-      setIsLoading(false);
+      setIsSubmitting(false);
     }
   };
+
+  // If still checking auth status
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[70vh]">
+        <Loader2 className="h-12 w-12 animate-spin text-travel-gold" />
+      </div>
+    );
+  }
+
+  // Don't show auth page if user is already logged in
+  if (user) {
+    return (
+      <div className="flex items-center justify-center min-h-[70vh]">
+        <Card className="w-full max-w-md">
+          <CardHeader>
+            <CardTitle className="text-center">Already Logged In</CardTitle>
+            <CardDescription className="text-center">
+              You are already authenticated!
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex justify-center">
+            <Button onClick={() => navigate('/')}>Go to Home Page</Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
-    <div className="container mx-auto flex justify-center items-center py-20">
-      <Card className="w-full max-w-md">
-        <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold text-center">Welcome</CardTitle>
-          <CardDescription className="text-center">
-            Sign in to your account or create a new one
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Tabs defaultValue="login" value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid grid-cols-3 mb-6">
-              <TabsTrigger value="login">Login</TabsTrigger>
-              <TabsTrigger value="register">Register</TabsTrigger>
-              <TabsTrigger value="forgot">Forgot</TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="login">
-              <Form {...loginForm}>
-                <form onSubmit={loginForm.handleSubmit(handleLogin)} className="space-y-4">
-                  <FormField
-                    control={loginForm.control}
-                    name="email"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Email</FormLabel>
-                        <FormControl>
-                          <Input placeholder="name@example.com" autoComplete="email" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={loginForm.control}
-                    name="password"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Password</FormLabel>
-                        <FormControl>
-                          <Input type="password" placeholder="••••••••" autoComplete="current-password" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <Button 
-                    type="submit" 
-                    className="w-full" 
-                    disabled={isLoading}
-                  >
-                    {isLoading ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Signing In...
-                      </>
-                    ) : (
-                      'Sign In'
-                    )}
-                  </Button>
-
-                  <div className="text-center">
-                    <Button 
-                      variant="link" 
-                      type="button" 
-                      onClick={() => setActiveTab('forgot')} 
-                      className="text-sm"
-                    >
-                      Forgot password?
-                    </Button>
-                  </div>
-                </form>
-              </Form>
-            </TabsContent>
-            
-            <TabsContent value="register">
-              <Form {...registerForm}>
-                <form onSubmit={registerForm.handleSubmit(handleRegister)} className="space-y-4">
-                  <Alert className="mb-4 dark:bg-blue-950 dark:text-blue-200">
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertDescription>
-                      Password must be at least 8 characters and include uppercase, lowercase, number, and special character
-                    </AlertDescription>
-                  </Alert>
-
-                  <FormField
-                    control={registerForm.control}
-                    name="email"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Email</FormLabel>
-                        <FormControl>
-                          <Input placeholder="name@example.com" autoComplete="email" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={registerForm.control}
-                    name="password"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Password</FormLabel>
-                        <FormControl>
-                          <Input type="password" placeholder="••••••••" autoComplete="new-password" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={registerForm.control}
-                    name="confirmPassword"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Confirm Password</FormLabel>
-                        <FormControl>
-                          <Input type="password" placeholder="••••••••" autoComplete="new-password" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <Button 
-                    type="submit" 
-                    className="w-full" 
-                    disabled={isLoading}
-                  >
-                    {isLoading ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Creating Account...
-                      </>
-                    ) : (
-                      'Create Account'
-                    )}
-                  </Button>
-                </form>
-              </Form>
-            </TabsContent>
-            
-            <TabsContent value="forgot">
-              {!showOtpForm ? (
-                <Form {...forgotPasswordForm}>
-                  <form onSubmit={forgotPasswordForm.handleSubmit(handleForgotPassword)} className="space-y-4">
-                    <FormField
-                      control={forgotPasswordForm.control}
-                      name="email"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Email</FormLabel>
-                          <FormControl>
-                            <Input placeholder="name@example.com" autoComplete="email" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <Button 
-                      type="submit" 
-                      className="w-full" 
-                      disabled={isLoading}
-                    >
-                      {isLoading ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Sending Email...
-                        </>
-                      ) : (
-                        'Send Reset Email'
-                      )}
-                    </Button>
-                  </form>
-                </Form>
-              ) : (
-                <Form {...resetPasswordForm}>
-                  <form onSubmit={resetPasswordForm.handleSubmit(handleResetPassword)} className="space-y-4">
-                    <Alert className="mb-4">
-                      <AlertDescription>
-                        {passwordResetToken ? 
-                          "Enter your new password below" : 
-                          `Enter the 6-digit code sent to ${forgotPasswordEmail}`}
-                      </AlertDescription>
-                    </Alert>
-                    
-                    {!passwordResetToken && (
-                      <FormField
-                        control={resetPasswordForm.control}
-                        name="otp"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>OTP Code</FormLabel>
-                            <FormControl>
-                              <div className="flex justify-center">
-                                <InputOTP maxLength={6} {...field}>
-                                  <InputOTPGroup>
-                                    <InputOTPSlot index={0} />
-                                    <InputOTPSlot index={1} />
-                                    <InputOTPSlot index={2} />
-                                    <InputOTPSlot index={3} />
-                                    <InputOTPSlot index={4} />
-                                    <InputOTPSlot index={5} />
-                                  </InputOTPGroup>
-                                </InputOTP>
-                              </div>
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
+    <div className="container mx-auto py-16 px-4 min-h-[70vh] flex items-center justify-center">
+      <div className="w-full max-w-md">
+        <Card className="border-muted shadow-lg">
+          <CardHeader>
+            <CardTitle className="text-2xl text-center font-playfair">Welcome to Seeta<span className="text-travel-gold">Narayan</span></CardTitle>
+            <CardDescription className="text-center">
+              {redirectParam === 'booking' ? 'Please sign in to continue with your booking' : 'Sign in to your account or create a new one'}
+            </CardDescription>
+          </CardHeader>
+          
+          <CardContent>
+            <Tabs defaultValue={activeTab} onValueChange={setActiveTab} className="w-full">
+              <TabsList className="grid w-full grid-cols-2 mb-8">
+                <TabsTrigger value="login">Sign In</TabsTrigger>
+                <TabsTrigger value="signup">Create Account</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="login">
+                <form onSubmit={loginForm.handleSubmit(onLoginSubmit)} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="email">Email</Label>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                      <Input 
+                        id="email" 
+                        placeholder="Enter your email" 
+                        type="email"
+                        className="pl-10"
+                        {...loginForm.register('email')}
                       />
-                    )}
-                    
-                    <FormField
-                      control={resetPasswordForm.control}
-                      name="password"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>New Password</FormLabel>
-                          <FormControl>
-                            <Input type="password" placeholder="••••••••" autoComplete="new-password" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <FormField
-                      control={resetPasswordForm.control}
-                      name="confirmPassword"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Confirm New Password</FormLabel>
-                          <FormControl>
-                            <Input type="password" placeholder="••••••••" autoComplete="new-password" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    {!passwordResetToken && (
-                      <div className="text-sm text-muted-foreground mb-4">
-                        {5 - otpAttempts} attempts remaining
-                      </div>
-                    )}
-                    
-                    <Button 
-                      type="submit" 
-                      className="w-full" 
-                      disabled={isLoading || (!passwordResetToken && otpAttempts >= 5)}
-                    >
-                      {isLoading ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Resetting Password...
-                        </>
-                      ) : (
-                        'Reset Password'
-                      )}
-                    </Button>
-
-                    <div className="text-center">
-                      <Button 
-                        variant="link" 
-                        type="button" 
-                        onClick={() => {
-                          setShowOtpForm(false);
-                          setOtpAttempts(0);
-                          setPasswordResetToken('');
-                        }} 
-                        className="text-sm"
-                      >
-                        Back to forgot password
-                      </Button>
                     </div>
-                  </form>
-                </Form>
-              )}
-            </TabsContent>
-          </Tabs>
-        </CardContent>
-        <CardFooter className="flex flex-col space-y-2">
-          <div className="text-center text-sm text-muted-foreground">
-            Sign in to access your account and manage your travel bookings.
-          </div>
-        </CardFooter>
-      </Card>
+                    {loginForm.formState.errors.email && (
+                      <p className="text-sm text-red-500">{loginForm.formState.errors.email.message}</p>
+                    )}
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="password">Password</Label>
+                      <a href="#" className="text-xs text-travel-gold hover:underline">
+                        Forgot password?
+                      </a>
+                    </div>
+                    <div className="relative">
+                      <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                      <Input 
+                        id="password" 
+                        placeholder="Enter your password" 
+                        type="password"
+                        className="pl-10"
+                        {...loginForm.register('password')}
+                      />
+                    </div>
+                    {loginForm.formState.errors.password && (
+                      <p className="text-sm text-red-500">{loginForm.formState.errors.password.message}</p>
+                    )}
+                  </div>
+                  
+                  <Button 
+                    type="submit" 
+                    className="w-full bg-travel-gold hover:bg-amber-600 text-black font-medium"
+                    disabled={isSubmitting}
+                  >
+                    {isSubmitting ? (
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    ) : (
+                      <ArrowRight className="h-4 w-4 mr-2" />
+                    )}
+                    Sign In
+                  </Button>
+                </form>
+              </TabsContent>
+              
+              <TabsContent value="signup">
+                <form onSubmit={signupForm.handleSubmit(onSignupSubmit)} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="signup-email">Email</Label>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                      <Input 
+                        id="signup-email" 
+                        placeholder="Enter your email" 
+                        type="email"
+                        className="pl-10"
+                        {...signupForm.register('email')}
+                      />
+                    </div>
+                    {signupForm.formState.errors.email && (
+                      <p className="text-sm text-red-500">{signupForm.formState.errors.email.message}</p>
+                    )}
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="signup-password">Password</Label>
+                    <div className="relative">
+                      <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                      <Input 
+                        id="signup-password" 
+                        placeholder="Create a password" 
+                        type="password"
+                        className="pl-10"
+                        {...signupForm.register('password')}
+                      />
+                    </div>
+                    {signupForm.formState.errors.password && (
+                      <p className="text-sm text-red-500">{signupForm.formState.errors.password.message}</p>
+                    )}
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="confirm-password">Confirm Password</Label>
+                    <div className="relative">
+                      <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                      <Input 
+                        id="confirm-password" 
+                        placeholder="Confirm your password" 
+                        type="password"
+                        className="pl-10"
+                        {...signupForm.register('confirmPassword')}
+                      />
+                    </div>
+                    {signupForm.formState.errors.confirmPassword && (
+                      <p className="text-sm text-red-500">{signupForm.formState.errors.confirmPassword.message}</p>
+                    )}
+                  </div>
+                  
+                  <Button 
+                    type="submit" 
+                    className="w-full bg-travel-gold hover:bg-amber-600 text-black font-medium"
+                    disabled={isSubmitting}
+                  >
+                    {isSubmitting ? (
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    ) : (
+                      <ArrowRight className="h-4 w-4 mr-2" />
+                    )}
+                    Create Account
+                  </Button>
+                </form>
+              </TabsContent>
+            </Tabs>
+          </CardContent>
+          
+          <CardFooter className="flex flex-col space-y-2 pt-0">
+            <div className="text-xs text-center text-muted-foreground">
+              By continuing, you agree to our Terms of Service and Privacy Policy.
+            </div>
+          </CardFooter>
+        </Card>
+      </div>
     </div>
   );
 };
 
-export default Auth;
+export default AuthPage;

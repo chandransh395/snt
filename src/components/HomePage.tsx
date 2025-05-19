@@ -3,11 +3,10 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Loader2 } from "lucide-react";
+import { Loader2, MessageCircle, Phone } from "lucide-react";
 import { supabase } from '@/integrations/supabase/client';
 import DestinationCard from './DestinationCard';
-import { formatPrice } from '@/utils/currency';
+import { motion } from 'framer-motion';
 
 type Destination = {
   id: number;
@@ -39,7 +38,7 @@ const HomePage = () => {
           .select('*')
           .eq('top_booked', true)
           .order('bookings_count', { ascending: false })
-          .limit(6);
+          .limit(5); // Limit to 5 to leave room for "Looking for something else" card
         
         if (error) throw new Error(error.message);
         
@@ -68,58 +67,59 @@ const HomePage = () => {
   // Main JSX structure for the HomePage component
   return (
     <section className="py-16">
-      <div className="container mx-auto text-center">
-        <h2 className="text-3xl font-bold mb-8">Top Destinations</h2>
-
+      <div className="container mx-auto text-center px-4">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+        >
+          <h2 className="text-3xl md:text-4xl font-bold mb-3 font-playfair">Top Destinations</h2>
+          <div className="w-20 h-1 bg-travel-gold mx-auto mb-8"></div>
+        </motion.div>
         
         {loading ? (
           <div className="flex justify-center py-12">
-            <Loader2 className="h-8 w-8 animate-spin" />
+            <Loader2 className="h-8 w-8 animate-spin text-travel-gold" />
           </div>
         ) : topDestinations.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {topDestinations.map((destination) => (
-              <Link 
-                key={destination.id} 
-                to={`/destinations/${destination.id}`}
-                className="block hover:no-underline"
-              >
-                <Card className="overflow-hidden h-full hover-lift transition-all duration-300 hover:shadow-md">
- <div className="relative h-48 overflow-hidden">
-                    <img 
-                      src={destination.image} 
-                      alt={destination.name} 
-                      loading="lazy"
-                      className="w-full h-full object-cover" 
-                    />
-                    <div className="absolute top-2 right-2">
-                      <Badge className="bg-amber-500 text-white">Popular</Badge>
-                    </div>
-                  </div>
-
-                  <CardContent className="p-4">
-                    <h3 className="text-xl font-semibold mb-2">{destination.name}</h3>
-                    
-                    <div className="flex items-center justify-between mb-3">
-                      <span className="text-sm text-muted-foreground capitalize">{destination.region}</span>
-                      <span className="text-sm font-medium">{destination.price}</span>
-                    </div>
-
-                    <p className="text-sm line-clamp-3 mb-4">
-                      {destination.description}
-                    </p>
-
-                    <div className="flex flex-wrap gap-1 mt-auto">
-                      {destination.tags?.slice(0, 3).map((tag, idx) => (
-                        <Badge key={idx} variant="outline" className="text-xs">
-                          {tag}
-                        </Badge>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              </Link>
+            {topDestinations.map((destination, index) => (
+              <DestinationCard key={destination.id} destination={destination} index={index} />
             ))}
+            
+            {/* "Looking for something else?" card */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: (topDestinations.length) * 0.1 }}
+              className="h-full"
+            >
+              <Card className="overflow-hidden h-full flex flex-col bg-gradient-to-br from-indigo-50 to-amber-50 border-dashed border-travel-gold/30">
+                <CardContent className="p-6 flex flex-col items-center justify-center h-full text-center">
+                  <div className="rounded-full bg-travel-gold/10 p-6 mb-6">
+                    <MessageCircle className="h-12 w-12 text-travel-gold" />
+                  </div>
+                  
+                  <h3 className="text-2xl font-semibold mb-3">Looking for something else?</h3>
+                  <p className="text-muted-foreground mb-6">
+                    Don't see what you're looking for? Contact our travel experts for personalized recommendations!
+                  </p>
+                  
+                  <div className="flex flex-col sm:flex-row gap-4 mt-auto">
+                    <Button asChild className="bg-travel-gold hover:bg-amber-600 text-black">
+                      <Link to="/contact">Contact Us</Link>
+                    </Button>
+                    
+                    <Button variant="outline" asChild className="border-travel-gold text-travel-gold hover:bg-travel-gold/10">
+                      <a href="tel:+1234567890">
+                        <Phone className="h-4 w-4 mr-2" />
+                        Call Now
+                      </a>
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
           </div>
         ) : (
           // Render a message if no top destinations are found
@@ -128,10 +128,9 @@ const HomePage = () => {
           </div>
         )}
 
-        <div className="text-center mt-8">
-          <Button asChild className="bg-travel-gold hover:bg-amber-600 text-black">
+        <div className="text-center mt-12">
+          <Button asChild className="bg-travel-gold hover:bg-amber-600 text-black px-8 py-6 text-lg">
             <Link to="/destinations">View All Destinations</Link>
-            {/* Button to navigate to the all destinations page */}
           </Button>
         </div>
       </div>

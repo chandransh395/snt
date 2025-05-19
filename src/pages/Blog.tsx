@@ -5,8 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from '@/components/ui/use-toast';
-import { Loader2, Calendar, User } from 'lucide-react';
+import { Loader2, Calendar, User, ArrowRight } from 'lucide-react';
 import { supabaseCustom } from '../utils/supabase-custom';
+import { motion } from 'framer-motion';
 
 interface BlogPost {
   id: number;
@@ -35,13 +36,28 @@ const BlogHero = () => {
 
       <div className="container mx-auto px-4 relative z-10">
         <div className="max-w-3xl mx-auto text-center text-white">
-          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 font-playfair">
+          <motion.h1 
+            className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 font-playfair"
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+          >
             Travel <span className="text-travel-gold">Blog</span>
-          </h1>
-          <div className="w-24 h-1 bg-travel-gold mx-auto mb-6"></div>
-          <p className="text-xl text-gray-200 mb-8">
+          </motion.h1>
+          <motion.div 
+            className="w-24 h-1 bg-travel-gold mx-auto mb-6"
+            initial={{ scaleX: 0 }}
+            animate={{ scaleX: 1 }}
+            transition={{ duration: 0.6, delay: 0.3 }}
+          ></motion.div>
+          <motion.p 
+            className="text-xl text-gray-200 mb-8"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.6, delay: 0.4 }}
+          >
             Discover travel tips, destination guides, and inspiring stories from our global adventures.
-          </p>
+          </motion.p>
         </div>
       </div>
     </section>
@@ -98,7 +114,7 @@ const Blog = () => {
       <div className="container mx-auto py-16 px-4">
         {loading ? (
           <div className="flex justify-center py-12">
-            <Loader2 className="h-8 w-8 animate-spin" />
+            <Loader2 className="h-8 w-8 animate-spin text-travel-gold" />
           </div>
         ) : blogPosts.length === 0 ? (
           <div className="text-center py-12">
@@ -109,65 +125,73 @@ const Blog = () => {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {blogPosts.map((post) => (
-              <Card key={post.id} className="flex flex-col">
-                <div className="relative h-48 overflow-hidden">
-                  <img
-                    src={post.image}
-                    alt={post.title}
-                    className="w-full h-full object-cover"
- loading="lazy"
-                  />
-                  {post.category && (
-                    <Badge 
-                      className="absolute top-4 left-4 bg-travel-gold text-black"
-                    >
-                      {post.category}
-                    </Badge>
-                  )}
-                </div>
-                
-                <CardHeader>
-                  <CardTitle className="text-xl mb-2">
-                    {post.title}
-                  </CardTitle>
-                  <CardDescription className="flex items-center gap-4 text-sm">
-                    <span className="flex items-center">
-                      <Calendar className="h-4 w-4 mr-1" />
-                      {formatDate(post.published_at)}
-                    </span>
-                    <span className="flex items-center">
-                      <User className="h-4 w-4 mr-1" />
-                      {post.author}
-                    </span>
-                  </CardDescription>
-                </CardHeader>
-                
-                <CardContent>
-                  <p className="text-muted-foreground line-clamp-3">
-                    {post.excerpt || post.content}
-                  </p>
+            {blogPosts.map((post, index) => (
+              <motion.div
+                key={post.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, delay: index * 0.1 }}
+              >
+                <Card className="flex flex-col h-full overflow-hidden transition-all duration-300 hover:shadow-lg">
+                  <div className="relative h-48 overflow-hidden">
+                    <img
+                      src={post.image}
+                      alt={post.title}
+                      className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
+                      loading="lazy"
+                    />
+                    {post.category && (
+                      <Badge 
+                        className="absolute top-4 left-4 bg-travel-gold text-black px-3 py-1"
+                      >
+                        {post.category}
+                      </Badge>
+                    )}
+                  </div>
                   
-                  {post.tags && post.tags.length > 0 && (
-                    <div className="flex flex-wrap gap-1 mt-4">
-                      {post.tags.map((tag, index) => (
-                        <Badge key={index} variant="secondary">
-                          {tag}
-                        </Badge>
-                      ))}
-                    </div>
-                  )}
-                </CardContent>
-                
-                <CardFooter className="mt-auto pt-4">
-                  <Button 
-                    variant="outline" 
-                    className="w-full border-travel-gold text-travel-gold hover:bg-travel-gold hover:text-white"
-                  >
-                    Read More
-                  </Button>
-                </CardFooter>
-              </Card>
+                  <CardHeader>
+                    <CardTitle className="text-xl mb-2 line-clamp-2">
+                      {post.title}
+                    </CardTitle>
+                    <CardDescription className="flex items-center gap-4 text-sm">
+                      <span className="flex items-center">
+                        <Calendar className="h-4 w-4 mr-1" />
+                        {formatDate(post.published_at)}
+                      </span>
+                      <span className="flex items-center">
+                        <User className="h-4 w-4 mr-1" />
+                        {post.author}
+                      </span>
+                    </CardDescription>
+                  </CardHeader>
+                  
+                  <CardContent>
+                    <p className="text-muted-foreground line-clamp-3">
+                      {post.excerpt || post.content}
+                    </p>
+                    
+                    {post.tags && post.tags.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mt-4">
+                        {post.tags.map((tag, index) => (
+                          <Badge key={index} variant="secondary" className="text-xs">
+                            {tag}
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                  
+                  <CardFooter className="mt-auto pt-4">
+                    <Button 
+                      variant="outline" 
+                      className="w-full border-travel-gold text-travel-gold hover:bg-travel-gold hover:text-white group"
+                    >
+                      Read More
+                      <ArrowRight className="h-4 w-4 ml-2 transition-transform group-hover:translate-x-1" />
+                    </Button>
+                  </CardFooter>
+                </Card>
+              </motion.div>
             ))}
           </div>
         )}

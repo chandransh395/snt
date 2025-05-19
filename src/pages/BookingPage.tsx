@@ -1,419 +1,333 @@
-// Only updating the destination fetch to use supabase instead of supabaseCustom
-// and fix the number/string error we were having
+
 import { useState, useEffect } from 'react';
-import { useParams, useLocation } from 'react-router-dom';
-import { useNavigate } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
-import { useToast } from '@/components/ui/use-toast';
+import { useParams, useNavigate } from 'react-router-dom';
+import { useForm } from 'react-hook-form';
+import { z } from 'zod';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { Calendar } from 'lucide-react';
+import { DatePicker } from '@/components/DatePicker';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { 
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle, 
-} from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
-import { Separator } from '@/components/ui/separator';
-import { Badge } from '@/components/ui/badge';
-import { CalendarIcon } from "lucide-react";
+import { Textarea } from '@/components/ui/textarea';
+import { useToast } from '@/components/ui/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 import { formatPrice } from '@/utils/currency';
-import { DatePicker } from '@/components/DatePicker';
+import BookingAuthWrapper from '@/components/BookingAuthWrapper';
+
+// Schema for form validation
+const bookingSchema = z.object({
+  travelerName: z.string().min(2, { message: "Name must be at least 2 characters" }),
+  travelerEmail: z.string().email({ message: "Please enter a valid email" }),
+  travelerPhone: z.string().min(5, { message: "Please enter a valid phone number" }),
+  travelDate: z.date({ required_error: "Please select a travel date" }),
+  numTravelers: z.number().min(1).max(20),
+  specialRequests: z.string().optional(),
+});
+
+type BookingFormValues = z.infer<typeof bookingSchema>;
 
 const BookingPage = () => {
   const { id } = useParams();
-  const location = useLocation();
   const navigate = useNavigate();
-  const { user } = useAuth();
   const { toast } = useToast();
-  
-  // Get the duration from location state if available
-  const passedDuration = location.state?.duration || 3;
-  const passedDurationType = location.state?.durationType || 'days';
+  const { user } = useAuth();
   
   const [destination, setDestination] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [formData, setFormData] = useState({
-    travelerName: '',
-    travelerEmail: '',
-    travelerPhone: '',
-    numTravelers: 1,
-    travelDate: null,
-    specialRequests: '',
+  const [submitting, setSubmitting] = useState(false);
+  const [duration, setDuration] = useState(1); // Default 1 day
+  const [totalPrice, setTotalPrice] = useState('');
+  const [basePrice, setBasePrice] = useState('');
+  
+  // Set up React Hook Form with zod validation
+  const form = useForm<BookingFormValues>({
+    resolver: zodResolver(bookingSchema),
+    defaultValues: {
+      travelerName: user?.user_metadata?.full_name || '',
+      travelerEmail: user?.email || '',
+      travelerPhone: '',
+      numTravelers: 1,
+      specialRequests: '',
+    },
   });
-
+  
+  // Fetch destination data
   useEffect(() => {
-    if (id) {
-      fetchDestination();
+    async function fetchDestination() {
+      try {
+        const { data, error } = await supabase
+          .from('destinations')
+          .select('*')
+          .eq('id', id)
+          .single();
+        
+        if (error) throw error;
+        
+        if (data) {
+          setDestination(data);
+          // Parse the price string to a number
+          const priceValue = parseFloat(data.price.replace(/[^0-9.-]+/g, ''));
+          setBasePrice(data.price);
+          setTotalPrice(formatPrice(priceValue * duration));
+        }
+      } catch (err) {
+        console.error('Error fetching destination:', err);
+        toast({
+          title: 'Error',
+          description: 'Failed to load destination details.',
+          variant: 'destructive',
+        });
+      } finally {
+        setLoading(false);
+      }
     }
     
-    // Pre-fill email from authenticated user
-    if (user) {
-      setFormData(prev => ({
-        ...prev,
-        travelerEmail: user.email || '',
-      }));
+    fetchDestination();
+  }, [id, toast, duration]);
+  
+  // Update price when duration changes
+  useEffect(() => {
+    if (destination) {
+      const priceValue = parseFloat(destination.price.replace(/[^0-9.-]+/g, ''));
+      setTotalPrice(formatPrice(priceValue * duration));
     }
-  }, [id, user]);
-
-  const fetchDestination = async () => {
+  }, [duration, destination]);
+  
+  const onSubmit = async (data: BookingFormValues) => {
+    if (!destination) return;
+    
     try {
-      setLoading(true);
+      setSubmitting(true);
       
-      // Convert ID to number for database query
-      const destinationId = parseInt(id as string, 10);
+      // Convert price string to number for database
+      const priceValue = parseFloat(destination.price.replace(/[^0-9.-]+/g, '')) * duration;
       
-      // Validate ID is a number
-      if (isNaN(destinationId)) {
-        toast({
-          title: "Error",
-          description: "Invalid destination ID",
-          variant: "destructive",
-        });
-        navigate('/destinations');
-        return;
-      }
+      const bookingData = {
+        destination_id: destination.id,
+        destination_name: destination.name,
+        user_id: user?.id,
+        traveler_name: data.travelerName,
+        traveler_email: data.travelerEmail,
+        traveler_phone: data.travelerPhone,
+        travel_date: data.travelDate.toISOString().split('T')[0],
+        num_travelers: data.numTravelers,
+        special_requests: data.specialRequests,
+        price: priceValue,
+        status: 'pending',
+        duration_days: duration
+      };
       
-      const { data, error } = await supabase
-        .from('destinations')
-        .select('*')
-        .eq('id', destinationId)
-        .single();
+      const { error } = await supabase
+        .from('bookings')
+        .insert([bookingData]);
       
       if (error) throw error;
       
-      if (data) {
-        setDestination(data);
-      } else {
-        toast({
-          title: "Error",
-          description: "Destination not found",
-          variant: "destructive",
-        });
-        navigate('/destinations');
-      }
-    } catch (error) {
-      console.error("Error fetching destination:", error);
       toast({
-        title: "Error",
-        description: "Failed to load destination details",
-        variant: "destructive",
+        title: 'Booking successful!',
+        description: 'Your booking has been submitted.',
+      });
+      
+      // Increment bookings_count for this destination
+      await supabase.rpc('increment_bookings', { destination_id: destination.id });
+      
+      // Redirect to success page
+      navigate('/booking-success');
+    } catch (err) {
+      console.error('Error submitting booking:', err);
+      toast({
+        title: 'Booking failed',
+        description: 'There was an error processing your booking. Please try again.',
+        variant: 'destructive',
       });
     } finally {
-      setLoading(false);
+      setSubmitting(false);
     }
-  };
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value,
-    }));
-  };
-  
-  const handleDateChange = (date: Date | null) => {
-    setFormData(prev => ({
-      ...prev,
-      travelDate: date,
-    }));
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!user) {
-      toast({
-        title: "Authentication Required",
-        description: "Please sign in to complete your booking.",
-        variant: "destructive",
-      });
-      navigate('/auth');
-      return;
-    }
-    
-    try {
-      // Validate form data
-      if (!formData.travelerName || !formData.travelerEmail || !formData.travelerPhone || !formData.numTravelers || !formData.travelDate) {
-        toast({
-          title: "Error",
-          description: "Please fill in all required fields.",
-          variant: "destructive",
-        });
-        return;
-      }
-      
-      // Convert numTravelers to a number
-      const numTravelers = parseInt(String(formData.numTravelers), 10);
-      
-      // Validate numTravelers is a number
-      if (isNaN(numTravelers) || numTravelers <= 0) {
-        toast({
-          title: "Error",
-          description: "Number of travelers must be a valid number.",
-          variant: "destructive",
-        });
-        return;
-      }
-      
-      const { data, error } = await supabase
-        .from('bookings')
-        .insert({
-          user_id: user.id,
-          destination_id: parseInt(id as string, 10),
-          destination_name: destination.name,
-          traveler_name: formData.travelerName,
-          traveler_email: formData.travelerEmail,
-          traveler_phone: formData.travelerPhone,
-          num_travelers: numTravelers,
-          travel_date: formData.travelDate.toISOString(),
-          special_requests: formData.specialRequests,
-          price: calculateTotalPrice(),
-          status: 'pending',
-          created_at: new Date().toISOString(),
-          duration: passedDuration,
-          duration_type: passedDurationType,
-        });
-        
-      if (error) throw error;
-      
-      toast({
-        title: "Booking Request Sent",
-        description: "Your booking request has been submitted and is awaiting confirmation.",
-      });
-      
-      // Redirect to a confirmation page or back to destinations
-      navigate('/destinations');
-    } catch (error) {
-      console.error("Error submitting booking:", error);
-      toast({
-        title: "Error",
-        description: "Failed to submit booking. Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
-  
-  // Calculate total price based on base price and duration
-  const calculateTotalPrice = () => {
-    if (!destination) return "0";
-    
-    // Extract numeric price from the destination price string (e.g. "From ₹25,000" → 25000)
-    const priceMatch = destination.price.match(/[\d,]+/);
-    if (!priceMatch) return destination.price;
-    
-    const basePrice = parseFloat(priceMatch[0].replace(/,/g, ''));
-    const nightsMultiplier = passedDurationType === 'nights' ? passedDuration : (passedDuration - 1);
-    const multiplier = passedDurationType === 'weeks' ? passedDuration * 7 : nightsMultiplier;
-    
-    // For multi-day trips, apply the multiplier and add a base package fee
-    const calculatedPrice = basePrice + (basePrice * 0.8 * multiplier);
-    
-    return `₹${calculatedPrice.toLocaleString()}`;
   };
   
   if (loading) {
     return (
-      <div className="container mx-auto py-12 text-center">
-        <p>Loading destination details...</p>
+      <div className="container mx-auto py-12 px-4">
+        <div className="flex justify-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-travel-gold"></div>
+        </div>
       </div>
     );
   }
   
   if (!destination) {
     return (
-      <div className="container mx-auto py-12 text-center">
-        <h2 className="text-2xl font-bold mb-4">Destination Not Found</h2>
-        <Button onClick={() => navigate('/destinations')}>View All Destinations</Button>
+      <div className="container mx-auto py-12 px-4">
+        <div className="text-center">
+          <h2 className="text-2xl font-semibold mb-4">Destination Not Found</h2>
+          <p className="mb-8">The destination you're looking for doesn't exist or has been removed.</p>
+          <Button onClick={() => navigate('/destinations')}>Browse Destinations</Button>
+        </div>
       </div>
     );
   }
   
-  // Update the booking details section to display duration
-  
   return (
-    <div className="container mx-auto py-12 px-4">
-      <h1 className="text-3xl font-bold mb-2">{destination.name}</h1>
-      <div className="text-muted-foreground mb-8">Book your adventure to this amazing destination</div>
-      
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2">
-          <Card>
-            <CardHeader>
-              <CardTitle>Traveler Information</CardTitle>
-              <CardDescription>
-                Enter your details to complete your booking
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <form id="booking-form" onSubmit={handleSubmit} className="space-y-4">
-                <div>
-                  <Label htmlFor="travelerName">Full Name</Label>
-                  <Input
-                    type="text"
-                    id="travelerName"
-                    name="travelerName"
-                    value={formData.travelerName}
-                    onChange={handleInputChange}
-                    placeholder="Enter your full name"
-                    required
-                  />
-                </div>
+    <BookingAuthWrapper destinationId={Number(id)} destinationName={destination.name}>
+      <div className="container mx-auto py-12 px-4">
+        <h1 className="text-3xl md:text-4xl font-semibold mb-6">Book Your Trip</h1>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Destination Preview */}
+          <div className="lg:col-span-1">
+            <div className="bg-white rounded-lg shadow-md overflow-hidden border border-gray-100">
+              <div className="h-48 overflow-hidden">
+                <img 
+                  src={destination.image} 
+                  alt={destination.name}
+                  className="w-full h-full object-cover" 
+                />
+              </div>
+              <div className="p-6">
+                <h2 className="text-2xl font-semibold mb-2">{destination.name}</h2>
+                <p className="text-muted-foreground mb-4 capitalize">{destination.region}</p>
                 
-                <div>
-                  <Label htmlFor="travelerEmail">Email Address</Label>
-                  <Input
-                    type="email"
-                    id="travelerEmail"
-                    name="travelerEmail"
-                    value={formData.travelerEmail}
-                    onChange={handleInputChange}
-                    placeholder="Enter your email address"
-                    required
-                  />
-                </div>
-                
-                <div>
-                  <Label htmlFor="travelerPhone">Phone Number</Label>
-                  <Input
-                    type="tel"
-                    id="travelerPhone"
-                    name="travelerPhone"
-                    value={formData.travelerPhone}
-                    onChange={handleInputChange}
-                    placeholder="Enter your phone number"
-                    required
-                  />
-                </div>
-                
-                <div>
-                  <Label htmlFor="numTravelers">Number of Travelers</Label>
-                  <Input
-                    type="number"
-                    id="numTravelers"
-                    name="numTravelers"
-                    value={formData.numTravelers}
-                    onChange={handleInputChange}
-                    placeholder="1"
-                    min="1"
-                    required
-                  />
-                </div>
-                
-                <div>
-                  <Label htmlFor="travelDate" className="flex items-center">
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    Select Travel Date
-                  </Label>
-                  <DatePicker 
-                    id="travelDate"
-                    name="travelDate"
-                    selected={formData.travelDate}
-                    onChange={handleDateChange}
-                  />
-                </div>
-                
-                <div>
-                  <Label htmlFor="specialRequests">Special Requests</Label>
-                  <Textarea
-                    id="specialRequests"
-                    name="specialRequests"
-                    value={formData.specialRequests}
-                    onChange={handleInputChange}
-                    placeholder="Enter any special requests (optional)"
-                    rows={3}
-                  />
-                </div>
-              </form>
-            </CardContent>
-          </Card>
-        </div>
-        
-        <div>
-          <Card className="sticky top-6">
-            <CardHeader className="pb-3">
-              <CardTitle>Booking Summary</CardTitle>
-              <CardDescription>
-                Trip details and pricing
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="relative h-40 rounded-md overflow-hidden">
-                  <img 
-                    src={destination.image} 
-                    alt={destination.name} 
-                    className="absolute inset-0 w-full h-full object-cover"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent flex items-end">
-                    <div className="p-3">
-                      <h3 className="text-white font-semibold">{destination.name}</h3>
-                      <p className="text-white/90 text-sm">{destination.region}</p>
-                    </div>
+                <div className="mb-6">
+                  <h3 className="text-lg font-medium mb-2">Trip Duration</h3>
+                  <div className="flex items-center mb-4">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => setDuration(Math.max(1, duration - 1))}
+                      disabled={duration === 1}
+                    >
+                      -
+                    </Button>
+                    <span className="mx-4 font-medium">{duration} {duration === 1 ? 'day' : 'days'}</span>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => setDuration(duration + 1)}
+                    >
+                      +
+                    </Button>
                   </div>
                 </div>
                 
-                <div>
-                  <h4 className="text-sm font-medium mb-2">Trip Duration:</h4>
-                  <Badge variant="outline" className="bg-muted/50">
-                    {passedDuration} {passedDurationType}
-                  </Badge>
-                </div>
-                
-                {destination.tags && destination.tags.length > 0 && (
+                <div className="flex items-baseline justify-between">
                   <div>
-                    <h4 className="text-sm font-medium mb-2">Experience:</h4>
-                    <div className="flex flex-wrap gap-1">
-                      {destination.tags.map((tag: string, i: number) => (
-                        <Badge key={i} variant="secondary" className="text-xs">
-                          {tag}
-                        </Badge>
-                      ))}
-                    </div>
+                    <span className="text-sm text-muted-foreground">Base price</span>
+                    <p className="font-medium">{basePrice}</p>
                   </div>
-                )}
-                
-                <Separator />
-                
-                <div className="space-y-2">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm">Base price:</span>
-                    <span className="font-medium">{destination.price}</span>
+                  <div>
+                    <span className="text-sm text-muted-foreground">Total price</span>
+                    <p className="text-xl font-semibold text-travel-gold">{totalPrice}</p>
                   </div>
-                  
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm">Duration:</span>
-                    <span className="font-medium">{passedDuration} {passedDurationType}</span>
-                  </div>
-                </div>
-                
-                <Separator />
-                
-                <div className="flex justify-between items-center">
-                  <span className="font-medium">Total:</span>
-                  <span className="text-xl font-bold text-travel-gold">
-                    {calculateTotalPrice()}
-                  </span>
                 </div>
               </div>
-            </CardContent>
-            <CardFooter>
-              <Button 
-                type="submit" 
-                form="booking-form"
-                className="w-full bg-travel-gold hover:bg-amber-600 text-black"
-              >
-                Confirm Booking
-              </Button>
-            </CardFooter>
-          </Card>
+            </div>
+          </div>
+          
+          {/* Booking Form */}
+          <div className="lg:col-span-2">
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 bg-white p-6 rounded-lg shadow-md border border-gray-100">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label htmlFor="travelerName">Full Name</Label>
+                  <Input 
+                    id="travelerName"
+                    placeholder="Enter your full name"
+                    {...form.register('travelerName')}
+                  />
+                  {form.formState.errors.travelerName && (
+                    <p className="text-red-500 text-sm">{form.formState.errors.travelerName.message}</p>
+                  )}
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="travelerEmail">Email</Label>
+                  <Input 
+                    id="travelerEmail" 
+                    type="email"
+                    placeholder="your.email@example.com"
+                    {...form.register('travelerEmail')}
+                  />
+                  {form.formState.errors.travelerEmail && (
+                    <p className="text-red-500 text-sm">{form.formState.errors.travelerEmail.message}</p>
+                  )}
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="travelerPhone">Phone Number</Label>
+                  <Input 
+                    id="travelerPhone" 
+                    placeholder="Enter your phone number"
+                    {...form.register('travelerPhone')}
+                  />
+                  {form.formState.errors.travelerPhone && (
+                    <p className="text-red-500 text-sm">{form.formState.errors.travelerPhone.message}</p>
+                  )}
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="numTravelers">Number of Travelers</Label>
+                  <Input 
+                    id="numTravelers" 
+                    type="number" 
+                    min={1} 
+                    max={20}
+                    {...form.register('numTravelers', { valueAsNumber: true })}
+                  />
+                  {form.formState.errors.numTravelers && (
+                    <p className="text-red-500 text-sm">{form.formState.errors.numTravelers.message}</p>
+                  )}
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <Label>Travel Date</Label>
+                <div className="flex flex-col">
+                  <DatePicker
+                    selected={form.getValues('travelDate')}
+                    onSelect={(date) => form.setValue('travelDate', date as Date)}
+                    minDate={new Date()}
+                    className="w-full"
+                    showIcon
+                    icon={<Calendar className="h-4 w-4" />}
+                  />
+                  {form.formState.errors.travelDate && (
+                    <p className="text-red-500 text-sm">{form.formState.errors.travelDate.message?.toString()}</p>
+                  )}
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="specialRequests">Special Requests (Optional)</Label>
+                <Textarea 
+                  id="specialRequests" 
+                  placeholder="Add any special requirements or requests..."
+                  className="min-h-[100px]"
+                  {...form.register('specialRequests')}
+                />
+              </div>
+              
+              <div className="pt-4">
+                <Button 
+                  type="submit" 
+                  className="w-full bg-travel-gold hover:bg-amber-600 text-black"
+                  disabled={submitting}
+                >
+                  {submitting ? (
+                    <>
+                      <span className="mr-2 animate-spin">⟳</span>
+                      Processing...
+                    </>
+                  ) : (
+                    'Complete Booking'
+                  )}
+                </Button>
+              </div>
+            </form>
+          </div>
         </div>
       </div>
-    </div>
+    </BookingAuthWrapper>
   );
 };
 
