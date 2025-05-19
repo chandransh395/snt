@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -51,7 +50,7 @@ const UserManagement = () => {
             
           if (!superAdminError && superAdminData) {
             // Check if is_super_admin exists in the returned data
-            setIsSuperAdmin(superAdminData.is_super_admin || false);
+            setIsSuperAdmin(!!superAdminData.is_super_admin);
           }
         }
         
@@ -60,14 +59,14 @@ const UserManagement = () => {
           .from('profiles')
           .select('id, username, created_at');
           
-        if (userError) throw userError;
+        if (userError || !userData) throw userError;
         
         // Fetch role data - we need to handle the case where is_super_admin might not exist
         const { data: roleData, error: roleError } = await supabase
           .from('user_roles')
           .select('*');
           
-        if (roleError) throw roleError;
+        if (roleError || !roleData) throw roleError;
         
         // Fetch auth users for emails
         const { data: authUsers, error: authError } = await supabase.auth.admin.listUsers();
@@ -76,15 +75,15 @@ const UserManagement = () => {
         
         // Combine the data
         const combinedUsers = userData.map(profile => {
-          const role = roleData.find(r => r.user_id === profile.id) || { is_admin: false };
+          const role = roleData.find(r => r.user_id === profile.id) || { is_admin: false, is_super_admin: false };
           const authUser = authUsers?.users?.find(au => au.id === profile.id);
           return {
             id: profile.id,
             email: authUser?.email || 'Unknown',
             created_at: profile.created_at,
             username: profile.username || authUser?.email || 'Unknown',
-            is_admin: role.is_admin || false,
-            is_super_admin: role.is_super_admin || false,
+            is_admin: !!role.is_admin,
+            is_super_admin: !!role.is_super_admin,
             last_sign_in_at: authUser?.last_sign_in_at || null
           };
         });
@@ -159,32 +158,21 @@ const UserManagement = () => {
       setUpdatingUser(selectedUserId);
       
       // First, make the target user a super admin
-      const updateData: any = { 
-        is_admin: true
-      };
-      
-      // Only add is_super_admin if we know it exists in the schema
-      if (isSuperAdmin) {
-        updateData.is_super_admin = true;
-      }
-      
       const { error: updateError } = await supabase
         .from('user_roles')
-        .update(updateData)
+        .update({ 
+          is_admin: true,
+          is_super_admin: true 
+        })
         .eq('user_id', selectedUserId);
       
       if (updateError) throw updateError;
       
       // Then, remove super admin status from current user
       if (user) {
-        const removeData: any = {};
-        if (isSuperAdmin) {
-          removeData.is_super_admin = false;
-        }
-        
         const { error: removeError } = await supabase
           .from('user_roles')
-          .update(removeData)
+          .update({ is_super_admin: false })
           .eq('user_id', user.id);
         
         if (removeError) throw removeError;

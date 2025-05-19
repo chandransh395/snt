@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
@@ -129,10 +130,9 @@ const BookingPage = () => {
         description: 'Your booking has been submitted.',
       });
       
-      // Increment bookings_count for this destination using rpc
-      const { error: rpcError } = await supabase.rpc('increment_bookings', { 
-        destination_id: destination.id 
-      });
+      // Use the rpc function to increment bookings count
+      const { error: rpcError } = await supabase
+        .rpc('increment_bookings', { destination_id: destination.id });
       
       if (rpcError) {
         console.error('Error incrementing booking count:', rpcError);

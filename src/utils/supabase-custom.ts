@@ -77,6 +77,10 @@ export interface Database {
         Args: { destination_id: number };
         Returns: void;
       };
+      is_admin: {
+        Args: { user_id: string };
+        Returns: boolean;
+      };
     };
   };
 }
