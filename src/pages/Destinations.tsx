@@ -256,6 +256,7 @@ const Destinations = () => {
                   src={destination.image}
                   alt={destination.name}
                   className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500"
+ loading="lazy"
                 />
                 <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
                   <h3 className="text-xl font-semibold text-white">{destination.name}</h3>

@@ -89,6 +89,7 @@ const HomePage = () => {
                     <img 
                       src={destination.image} 
                       alt={destination.name} 
+                      loading="lazy"
                       className="w-full h-full object-cover" 
                     />
                     <div className="absolute top-2 right-2">

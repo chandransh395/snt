@@ -49,39 +49,6 @@ const resetPasswordSchema = z.object({
 });
 
 const Auth = () => {
-  const { user, signIn, signUp } = useAuth();
-  const [isLoading, setIsLoading] = useState(false);
-  const [searchParams] = useSearchParams();
-  const tabParam = searchParams.get('tab');
-  const [activeTab, setActiveTab] = useState(tabParam === 'reset' ? 'forgot' : (tabParam || 'login'));
-  const [forgotPasswordEmail, setForgotPasswordEmail] = useState('');
-  const [otpAttempts, setOtpAttempts] = useState(0);
-  const [showOtpForm, setShowOtpForm] = useState(false);
-  const [passwordResetToken, setPasswordResetToken] = useState('');
-  const { toast } = useToast();
-  
-  useEffect(() => {
-    // Check for password reset token in URL
-    const hash = window.location.hash;
-    if (hash.includes('type=recovery')) {
-      const token = new URLSearchParams(hash.substring(1)).get('access_token');
-      if (token) {
-        setPasswordResetToken(token);
-        setActiveTab('forgot');
-        setShowOtpForm(true);
-        toast({
-          title: 'Password Reset',
-          description: 'Please enter a new password.',
-        });
-      }
-    }
-  }, [toast]);
-  
-  // If user is already logged in, redirect to home page
-  if (user) {
-    return <Navigate to="/" />;
-  }
-
   const loginForm = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
@@ -106,6 +73,17 @@ const Auth = () => {
     }
   });
 
+  const { user, signIn, signUp } = useAuth();
+  const [isLoading, setIsLoading] = useState(false);
+  const [searchParams] = useSearchParams();
+  const tabParam = searchParams.get('tab');
+  const [activeTab, setActiveTab] = useState(tabParam === 'reset' ? 'forgot' : (tabParam || 'login'));
+  const [forgotPasswordEmail, setForgotPasswordEmail] = useState('');
+  const [otpAttempts, setOtpAttempts] = useState(0);
+  const [showOtpForm, setShowOtpForm] = useState(false);
+  const [passwordResetToken, setPasswordResetToken] = useState('');
+  const { toast } = useToast();
+
   const resetPasswordForm = useForm<z.infer<typeof resetPasswordSchema>>({
     resolver: zodResolver(resetPasswordSchema),
     defaultValues: {
@@ -114,6 +92,28 @@ const Auth = () => {
       confirmPassword: ''
     }
   });
+  
+  useEffect(() => {
+    // Check for password reset token in URL
+    const hash = window.location.hash;
+    if (hash.includes('type=recovery')) {
+      const token = new URLSearchParams(hash.substring(1)).get('access_token');
+      if (token) {
+        setPasswordResetToken(token);
+        setActiveTab('forgot');
+        setShowOtpForm(true);
+        toast({
+          title: 'Password Reset',
+          description: 'Please enter a new password.',
+        });
+      }
+    }
+  }, [toast]);
+  
+  // If user is already logged in, redirect to home page
+  if (user) {
+    return <Navigate to="/" />;
+  }
 
   const handleLogin = async (data: z.infer<typeof loginSchema>) => {
     setIsLoading(true);
@@ -327,7 +327,7 @@ const Auth = () => {
             <TabsContent value="register">
               <Form {...registerForm}>
                 <form onSubmit={registerForm.handleSubmit(handleRegister)} className="space-y-4">
-                  <Alert className="mb-4 bg-blue-50">
+                  <Alert className="mb-4 dark:bg-blue-950 dark:text-blue-200">
                     <AlertCircle className="h-4 w-4" />
                     <AlertDescription>
                       Password must be at least 8 characters and include uppercase, lowercase, number, and special character

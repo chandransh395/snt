@@ -116,6 +116,7 @@ const Blog = () => {
                     src={post.image}
                     alt={post.title}
                     className="w-full h-full object-cover"
+ loading="lazy"
                   />
                   {post.category && (
                     <Badge 

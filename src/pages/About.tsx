@@ -40,6 +40,7 @@ const OurStory = () => {
               src="https://images.unsplash.com/photo-1511632765486-a01980e01a18?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1470&q=80"
               alt="JourneyGlow founders"
               className="rounded-lg shadow-xl"
+              loading="lazy"
             />
           </div>
           <div className="animate-slide-up">
@@ -159,7 +160,7 @@ const Team = () => {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
           {team.map((member, index) => (
             <div key={index} className="bg-background rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow">
-              <img src={member.image} alt={member.name} className="w-full h-64 object-cover object-center" />
+              <img src={member.image} alt={member.name} className="w-full h-64 object-cover object-center" loading="lazy" />
               <div className="p-6">
                 <h3 className="text-xl font-semibold mb-1">{member.name}</h3>
                 <p className="text-travel-gold mb-4">{member.role}</p>
@@ -183,9 +184,9 @@ const CTA = () => {
         </p>
         <div className="flex flex-wrap justify-center gap-4">
           <Button asChild className="bg-travel-gold hover:bg-amber-600 text-black">
-            <Link to="/contact" className="text-black dark:text-black">Contact Us</Link>
+            <Link to="/contact" className="text-black dark:text-white">Contact Us</Link>
           </Button>
-          <Button asChild variant="outline" className="border-white color:black hover:bg-black hover:text-white dark:border-black dark:bg-black dark:text-white dark:hover:bg-white dark:hover:text-black">
+          <Button asChild variant="outline" className="border-white text-black hover:border-black hover:bg-black hover:text-white dark:border-black dark:bg-black dark:text-white dark:hover:bg-white dark:hover:text-black">
             <Link to="/destinations">Explore Destinations</Link>
           </Button>
         </div>

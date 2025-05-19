@@ -32,6 +32,7 @@ const DestinationCard: React.FC<DestinationCardProps> = ({ destination }) => {
             src={destination.image}
             alt={destination.name}
             className="w-full h-full object-cover"
+            loading="lazy"
           />
           {destination.top_booked && (
             <div className="absolute top-2 right-2">

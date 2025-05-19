@@ -9,7 +9,7 @@ import HomePage from '@/components/HomePage';
 const Home = () => {
   return (
     <>
-      {/* Hero Section */}
+ {/* Hero Section */}
       <section className="relative h-[80vh] min-h-[600px] flex items-center justify-center bg-gray-900 overflow-hidden">
         {/* Background Image */}
         <div className="absolute inset-0 z-0">
@@ -104,12 +104,12 @@ const Home = () => {
                     </svg>
                   ))}
                 </div>
-                <p className="mb-4 italic">"The Santorini trip was beyond my expectations. Every detail was perfectly planned and our guide Maria made the experience truly special."</p>
+                <p className="mb-4 italic">"I recently completed the sacred Do dham yatra to Kedarnath & Badrinath over six days, starting and ending in Haridwar, And I'm happy  to share my experience with cab service we Used. The vehicle provided was well maintained, And the vehicle handled the rough mountain roads comfortably. Also driver was Not just skilled but also very polite And knowledgeable about the route and places."</p>
                 <div className="flex items-center">
-                  <div className="w-10 h-10 rounded-full bg-gray-200 mr-3"></div>
+                  <div className="w-10 h-10 rounded-full bg-gray-200 mr-3"><img src="https://lh3.googleusercontent.com/a-/ALV-UjVRO3z2kykQvBWpft-nCWZyUekzdd5WAdZqkzof-R58svl7rH6Rvw=w90-h90-p-rp-mo-br100" alt="" /></div>
                   <div>
-                    <p className="font-semibold">Sarah Johnson</p>
-                    <p className="text-sm text-muted-foreground">Greece Tour, 2023</p>
+                    <p className="font-semibold">Naveen Rawat</p>
+                    <p className="text-sm text-muted-foreground">Do-Dham Yatra, 2025</p>
                   </div>
                 </div>
               </CardContent>
@@ -124,12 +124,12 @@ const Home = () => {
                     </svg>
                   ))}
                 </div>
-                <p className="mb-4 italic">"Exploring the temples of Japan was a life-changing experience. The attention to cultural detail and the accommodations were top-notch."</p>
+                <p className="mb-4 italic">"I haven't seen the hospitality done by the staff. The staff was so polite and humorous. All charges are included in the quotation and there were no hidden charges. Trust full service."</p>
                 <div className="flex items-center">
-                  <div className="w-10 h-10 rounded-full bg-gray-200 mr-3"></div>
+                  <div className="w-10 h-10 rounded-full bg-gray-200 mr-3"><img src="https://lh3.googleusercontent.com/a-/ALV-UjV8hiGC37BAWDY830H5oWRY13jN_J_TSi-9KyDlFcjNdL_6GrLR=w45-h45-p-rp-mo-br100" alt="" /></div>
                   <div>
-                    <p className="font-semibold">Michael Chen</p>
-                    <p className="text-sm text-muted-foreground">Japan Tour, 2023</p>
+                    <p className="font-semibold">Rahul Mamgain</p>
+                    <p className="text-sm text-muted-foreground">Feb 2025</p>
                   </div>
                 </div>
               </CardContent>
@@ -144,12 +144,15 @@ const Home = () => {
                     </svg>
                   ))}
                 </div>
-                <p className="mb-4 italic">"Our family safari in Kenya was unforgettable. The guides were knowledgeable and ensured we saw the Big Five. The kids are still talking about it!"</p>
+                <p className="relative w-full rounded-lg p-4 [&>svg~*]:pl-7 [&>svg+div]:translate-y-[-3px] [&>svg]:absolute [&>svg]:left-4 [&>svg]:top-4 [&>svg]:text-foreground text-foreground mb-4">"My family and me enjoyed the trip of badrinath... REASONABLE PRICE AND GOOD SERVICE..
+The vehicle was clean nd cool but the best part is our driver is also a tourist guide who was very helpful
+Courteous, cheerful never showed any sign of tiredness or irritability and went way beyond all expectations to show us everything he possibly could...
+If you book through the seeta narayana travel you will surely had great experience and get travel service at best price..."</p>
                 <div className="flex items-center">
-                  <div className="w-10 h-10 rounded-full bg-gray-200 mr-3"></div>
+                  <div className="w-10 h-10 rounded-full bg-gray-200 mr-3"> <img src="https://lh3.googleusercontent.com/a-/ALV-UjXVx2iSaCyndNvb-LNxiz2pi2uYY_XpoqX8dMkfWeDozUcSnJfvPg=w45-h45-p-rp-mo-br100" alt="" /> </div>
                   <div>
-                    <p className="font-semibold">The Williams Family</p>
-                    <p className="text-sm text-muted-foreground">Kenya Safari, 2022</p>
+                    <p className="font-semibold">Anjali Negi</p>
+                    <p className="text-sm text-muted-foreground">Badrinath, 2024</p>
                   </div>
                 </div>
               </CardContent>
@@ -163,13 +166,13 @@ const Home = () => {
         <div className="container mx-auto px-4 text-center">
           <h2 className="text-3xl font-bold mb-6">Ready to Start Your Adventure?</h2>
           <p className="mb-8 max-w-2xl mx-auto">Join thousands of satisfied travelers who have explored the world with us. Your perfect journey is just a click away.</p>
-          <Button asChild size="lg" className="bg-travel-gold hover:bg-amber-600 text-black px-8">
+          <Button asChild size="lg" className="bg-travel-gold hover:bg-amber-600 text-black dark:text-white px-8">
             <Link to="/destinations">Book Your Trip Now</Link>
           </Button>
         </div>
       </section>
-    </>
-  );
+ </>
+ );
 };
 
 export default Home;
