@@ -72,7 +72,7 @@ const AdminBlog = () => {
       }
       
       // Order by published_date or created_at, most recent first
-      query = query.order('published_date', { descending: true, nullsFirst: false });
+      query = query.order('published_date', { ascending: false, nullsFirst: false });
       
       const { data, error } = await query;
       
@@ -155,7 +155,6 @@ const AdminBlog = () => {
     fetchPosts();
   };
 
-  // Rest of component (UI rendering)
   return (
     <div className="container mx-auto p-6">
       <header className="mb-8">
