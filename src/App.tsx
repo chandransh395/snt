@@ -41,6 +41,7 @@ function App() {
                 <Route path="destinations" element={<Destinations />} />
                 <Route path="destinations/:id" element={<DestinationDetail />} />
                 <Route path="book/:id" element={<BookingPage />} />
+                <Route path="booking/:id" element={<BookingPage />} /> {/* Added this route to handle /booking/:id */}
                 <Route path="booking-success" element={<BookingSuccess />} />
                 <Route path="blog" element={<Blog />} />
                 <Route path="blog/:id" element={<BlogPost />} />
@@ -55,9 +56,11 @@ function App() {
               }>
                 <Route index element={<AdminPanel />} />
                 <Route path="blog" element={<AdminBlog />} />
+                <Route path="blog/new" element={<AdminBlog />} /> {/* Added new route for blog creation */}
                 <Route path="destinations" element={<AdminDestinations />} />
                 <Route path="settings" element={<AdminSettings />} />
                 <Route path="bookings" element={<AdminBookings />} />
+                <Route path="users" element={<AdminPanel />} /> {/* Temporarily redirect to admin panel */}
               </Route>
             </Routes>
           </ErrorBoundary>

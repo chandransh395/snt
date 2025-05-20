@@ -41,7 +41,7 @@ const DestinationCard: React.FC<DestinationCardProps> = ({ destination, index = 
       <Card className="overflow-hidden h-full transition-all duration-300 hover:shadow-lg border-muted/40 cursor-pointer">
         <div className="relative h-52 overflow-hidden">
           <img
-            src={destination.image}
+            src={destination.image || 'https://images.unsplash.com/photo-1500673922987-e212871fec22?auto=format&fit=crop&w=600&q=60'}
             alt={destination.name}
             className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
             loading="lazy"

@@ -1,3 +1,4 @@
+
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -41,34 +42,41 @@ const Home = () => {
 
   return (
     <>
-      {/* Hero Section */}
-      <section className="relative h-[80vh] min-h-[600px] flex items-center justify-center bg-gray-900 overflow-hidden">
+      {/* Fullscreen Hero Section */}
+      <section className="relative h-screen w-full flex items-center justify-center bg-gray-900 overflow-hidden">
         {/* Background Image */}
         <div className="absolute inset-0 z-0">
           <img
             src="https://images.unsplash.com/photo-1469474968028-56623f02e42e?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80"
             alt="Beautiful landscape"
-            className="w-full h-full object-cover opacity-60"
+            className="w-full h-full object-cover opacity-70"
           />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/30 to-black/70"></div>
         </div>
 
         {/* Hero Content */}
-        <div className="relative z-10 text-center px-4 md:px-8 max-w-4xl mx-auto">
-          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6 animate-slide-up">
+        <div className="relative z-10 text-center px-4 md:px-8 max-w-5xl mx-auto">
+          <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-white mb-8 animate-fade-in drop-shadow-lg font-playfair">
             Discover the World's Most Breathtaking Destinations
           </h1>
 
-          <p className="text-lg md:text-xl text-white mb-8 opacity-90 animate-slide-up delay-100">
+          <p className="text-xl md:text-2xl text-white mb-12 opacity-90 animate-fade-in delay-100 max-w-3xl mx-auto">
             Your journey begins with us. Experience unforgettable adventures and create memories that last a lifetime.
           </p>
 
-          <div className="space-x-4 animate-slide-up delay-200">
-            <Button asChild className="bg-travel-gold hover:bg-amber-600 text-black dark:text-white px-8 py-6">
+          <div className="space-x-6 animate-fade-in delay-200">
+            <Button asChild className="bg-travel-gold hover:bg-amber-600 text-black dark:text-white px-10 py-7 text-lg">
               <Link to="/destinations">Explore Destinations</Link>
             </Button>
-            <Button asChild variant="outline" className="border-white bg-white text-black hover:bg-black hover:text-white dark:border-black dark:bg-black dark:text-white dark:hover:bg-white dark:hover:text-black px-8 py-6">
+            <Button asChild variant="outline" className="border-white bg-transparent text-white hover:bg-white/10 dark:border-white px-10 py-7 text-lg">
               <Link to="/contact">Contact Us</Link>
             </Button>
+          </div>
+          
+          <div className="absolute bottom-12 left-1/2 transform -translate-x-1/2 animate-bounce">
+            <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+            </svg>
           </div>
         </div>
       </section>

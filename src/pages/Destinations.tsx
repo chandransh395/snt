@@ -1,5 +1,6 @@
+
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -10,6 +11,7 @@ import { MapPin, Search, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { formatPrice } from '@/utils/currency';
 import LookingForElseCard from '@/components/LookingForElseCard';
+import DestinationCard from '@/components/DestinationCard';
 
 interface Destination {
   id: number;
@@ -30,6 +32,7 @@ const Destinations = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedRegion, setSelectedRegion] = useState('');
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchDestinations();
@@ -44,7 +47,7 @@ const Destinations = () => {
         .select('*')
         .order('name', { ascending: true });
 
-      if (selectedRegion) {
+      if (selectedRegion && selectedRegion !== 'all-regions') {
         query = query.eq('region', selectedRegion);
       }
 
@@ -113,6 +116,10 @@ const Destinations = () => {
     setSelectedRegion(region);
   };
 
+  const handleCardClick = (id: number) => {
+    navigate(`/destinations/${id}`);
+  };
+
   return (
     <div className="container mx-auto py-12 px-4">
       <header className="mb-8">
@@ -160,54 +167,17 @@ const Destinations = () => {
           <p className="text-muted-foreground">
             {searchQuery || selectedRegion
               ? 'Try adjusting your search or filter options.'
-              : 'Check back soon as we add more destinations.'}
+              : 'No destinations available at the moment.'}
           </p>
-          <Button 
-            onClick={() => {
-              // Create sample destination if none exist for demo purposes
-              createSampleDestinations();
-            }}
-            className="mt-4"
-          >
-            Generate Sample Destinations
-          </Button>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {destinations.map((destination) => (
-            <Card key={destination.id} className="overflow-hidden transition-all duration-300 hover:shadow-lg">
-              <div className="relative h-48 overflow-hidden">
-                <img
-                  src={destination.image || 'https://images.unsplash.com/photo-1500673922987-e212871fec22?auto=format&fit=crop&w=600&q=60'}
-                  alt={destination.name}
-                  className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
-                  loading="lazy"
-                />
-                <div className="absolute top-2 left-2">
-                  {destination.top_booked && (
-                    <span className="bg-travel-gold text-black text-xs font-semibold py-1 px-2 rounded-md">
-                      Top Booked
-                    </span>
-                  )}
-                </div>
-              </div>
-              <CardHeader>
-                <CardTitle className="text-xl line-clamp-1">{destination.name}</CardTitle>
-                <CardDescription className="flex items-center gap-2 text-muted-foreground">
-                  <MapPin className="h-4 w-4" />
-                  {destination.region}
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground line-clamp-3">{destination.description}</p>
-              </CardContent>
-              <CardFooter className="flex items-center justify-between">
-                <p className="text-xl font-semibold text-travel-gold">{formatPrice(destination.price)}</p>
-                <Link to={`/booking/${destination.id}`}>
-                  <Button>Book Now</Button>
-                </Link>
-              </CardFooter>
-            </Card>
+          {destinations.map((destination, index) => (
+            <DestinationCard 
+              key={destination.id} 
+              destination={destination} 
+              index={index} 
+            />
           ))}
           {/* Add the LookingForElseCard as the last card */}
           <LookingForElseCard darkTheme={true} />
@@ -215,129 +185,6 @@ const Destinations = () => {
       )}
     </div>
   );
-
-  // Helper function to create sample destinations if none exist
-  async function createSampleDestinations() {
-    const sampleDestinations = [
-      {
-        name: "Santorini, Greece",
-        description: "Experience the stunning white-washed buildings, blue domes, and breathtaking sunsets of Santorini. This iconic Greek island offers beautiful beaches, ancient ruins, and world-class dining.",
-        image: "https://images.unsplash.com/photo-1570077188670-e3a8d69ac5ff?auto=format&fit=crop&w=800&q=60",
-        price: "From $1,299",
-        region: "europe",
-        tags: ["Beach", "Romantic", "Cultural"],
-        top_booked: true,
-        bookings_count: 125
-      },
-      {
-        name: "Kyoto, Japan",
-        description: "Discover the ancient capital of Japan with its traditional temples, serene gardens, and geisha districts. Experience authentic Japanese culture through tea ceremonies and local cuisine.",
-        image: "https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?auto=format&fit=crop&w=800&q=60",
-        price: "From $1,499",
-        region: "asia",
-        tags: ["Cultural", "Historical", "Nature"],
-        top_booked: true,
-        bookings_count: 98
-      },
-      {
-        name: "Machu Picchu, Peru",
-        description: "Explore the ancient Incan citadel set high in the Andes Mountains. This UNESCO World Heritage site offers spectacular views and a glimpse into the sophisticated engineering of the Incan civilization.",
-        image: "https://images.unsplash.com/photo-1526392060635-9d6019884377?auto=format&fit=crop&w=800&q=60",
-        price: "From $1,899",
-        region: "americas",
-        tags: ["Adventure", "Historical", "Nature"],
-        top_booked: false,
-        bookings_count: 76
-      },
-      {
-        name: "Safari in Serengeti, Tanzania",
-        description: "Witness the incredible wildlife of Africa on a safari adventure through the vast plains of Serengeti. Experience the Great Migration and spot the Big Five in their natural habitat.",
-        image: "https://images.unsplash.com/photo-1523805009345-7448845a9e53?auto=format&fit=crop&w=800&q=60",
-        price: "From $2,499",
-        region: "africa",
-        tags: ["Wildlife", "Adventure", "Nature"],
-        top_booked: true,
-        bookings_count: 112
-      },
-      {
-        name: "Great Barrier Reef, Australia",
-        description: "Dive into the world's largest coral reef system teeming with marine life. Swim alongside tropical fish, turtles, and rays in crystal clear waters of this natural wonder.",
-        image: "https://images.unsplash.com/photo-1559751880-8e931718d522?auto=format&fit=crop&w=800&q=60",
-        price: "From $1,799",
-        region: "oceania",
-        tags: ["Beach", "Adventure", "Nature"],
-        top_booked: false,
-        bookings_count: 85
-      },
-      {
-        name: "Venice, Italy",
-        description: "Navigate the romantic canals of Venice in a gondola, admire the stunning architecture, and savor authentic Italian cuisine. This unique city built on water is a must-visit destination.",
-        image: "https://images.unsplash.com/photo-1498307833015-e7b400441eb8?auto=format&fit=crop&w=800&q=60",
-        price: "From $1,099",
-        region: "europe",
-        tags: ["Romantic", "Cultural", "Historical"],
-        top_booked: true,
-        bookings_count: 130
-      }
-    ];
-
-    try {
-      setLoading(true);
-      toast({
-        title: "Creating sample destinations...",
-        description: "Please wait while we set up some sample data."
-      });
-
-      // First check if regions exist, if not create them
-      const regionsToCreate = [
-        { name: "Europe", value: "europe" },
-        { name: "Asia", value: "asia" },
-        { name: "Americas", value: "americas" },
-        { name: "Africa", value: "africa" },
-        { name: "Oceania", value: "oceania" }
-      ];
-
-      const { data: existingRegions, error: regionCheckError } = await supabase
-        .from('regions')
-        .select('value');
-        
-      if (regionCheckError) {
-        console.error("Error checking regions:", regionCheckError);
-      } else if (!existingRegions || existingRegions.length === 0) {
-        // Regions don't exist, create them
-        const { error: regionCreateError } = await supabase
-          .from('regions')
-          .insert(regionsToCreate);
-          
-        if (regionCreateError) {
-          console.error("Error creating regions:", regionCreateError);
-        }
-      }
-      
-      // Then create the sample destinations
-      const { error } = await supabase
-        .from('destinations')
-        .insert(sampleDestinations);
-        
-      if (error) throw error;
-      
-      await fetchDestinations();
-      
-      toast({
-        title: "Success",
-        description: "Sample destinations created successfully!"
-      });
-    } catch (error: any) {
-      console.error("Error creating sample destinations:", error);
-      toast({
-        title: "Error",
-        description: `Failed to create sample destinations: ${error.message}`,
-        variant: "destructive"
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
 };
 
 export default Destinations;
