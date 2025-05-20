@@ -13,8 +13,8 @@ export async function setupSuperAdmin() {
     // Get all users and find our super admin
     const { data: allUsers, error: authError } = await supabase
       .from('profiles')
-      .select('id, email')
-      .eq('email', superAdminEmail);
+      .select('id, username')
+      .eq('username', superAdminEmail);
       
     if (authError) {
       console.error('Error checking for super admin:', authError);
@@ -22,7 +22,7 @@ export async function setupSuperAdmin() {
     }
     
     // Find any user that matches our super admin email
-    const superAdminUser = allUsers?.find(u => u.email === superAdminEmail);
+    const superAdminUser = allUsers?.find(u => u.username === superAdminEmail);
     
     if (!superAdminUser) {
       console.log('Designated super admin user not found. It will be set up when they first sign up:', superAdminEmail);
