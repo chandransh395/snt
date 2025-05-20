@@ -9,6 +9,8 @@ interface PieChartProps {
   index: string;
   colors?: string[];
   valueFormatter?: (value: number) => string;
+  height?: number | string;
+  emptyMessage?: string;
 }
 
 export function PieChart({
@@ -17,18 +19,34 @@ export function PieChart({
   index,
   colors = ["blue", "green", "amber", "red", "purple"],
   valueFormatter = (value: number) => value.toString(),
+  height = "100%",
+  emptyMessage = "No data available",
 }: PieChartProps) {
-  const config = Object.fromEntries(
-    data.map((item, i) => [
-      item[index],
-      { 
-        theme: { 
-          light: `hsl(var(--${colors[i % colors.length]}))`,
-          dark: `hsl(var(--${colors[i % colors.length]}))` 
-        } 
-      },
-    ])
-  );
+  // Check if we have valid data
+  const hasValidData = data && data.length > 0 && data.some(item => item[category]);
+
+  // Create config based on data
+  const config = hasValidData 
+    ? Object.fromEntries(
+        data.map((item, i) => [
+          item[index],
+          { 
+            theme: { 
+              light: `hsl(var(--${colors[i % colors.length]}))`,
+              dark: `hsl(var(--${colors[i % colors.length]}))` 
+            } 
+          },
+        ])
+      )
+    : {};
+
+  if (!hasValidData) {
+    return (
+      <div className="flex h-full w-full items-center justify-center text-muted-foreground">
+        {emptyMessage}
+      </div>
+    );
+  }
 
   return (
     <ChartContainer config={config}>

@@ -1,20 +1,25 @@
+
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { BarChart, LineChart, PieChart } from '@/components/ui/charts';
-import { Loader2, TrendingUp, TrendingDown, Users, MapPin, CreditCard, Calendar } from 'lucide-react';
+import { Loader2, TrendingUp, TrendingDown, Users, MapPin, CreditCard, Calendar, AlertCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { formatPrice } from '@/utils/currency';
+import { getDateRange, formatBookingData, formatDestinationData, calculateBookingStats } from '@/utils/admin-utils';
+import { Button } from '@/components/ui/button';
+import { DatePicker } from '@/components/DatePicker';
+import { addDays } from 'date-fns';
 
 const StatsOverview = () => {
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [bookingsStats, setBookingsStats] = useState({
     total: 0,
     pending: 0,
     confirmed: 0,
     completed: 0,
     cancelled: 0,
-    recentBookings: [],
     revenue: 0
   });
   const [usersStats, setUsersStats] = useState({
@@ -25,46 +30,101 @@ const StatsOverview = () => {
     total: 0,
     mostBooked: { name: '', count: 0 }
   });
-  const [timeFrame, setTimeFrame] = useState('7days');
+  
+  const [timeFrame, setTimeFrame] = useState<'7days' | '30days' | '90days' | 'custom'>('7days');
+  const [customStartDate, setCustomStartDate] = useState<Date | undefined>(undefined);
+  const [customEndDate, setCustomEndDate] = useState<Date | undefined>(undefined);
+  const [showCustomDatePicker, setShowCustomDatePicker] = useState(false);
+  
   const [bookingTrends, setBookingTrends] = useState<any[]>([]);
   const [topDestinations, setTopDestinations] = useState<any[]>([]);
   const [revenueData, setRevenueData] = useState<any[]>([]);
+  const [bookingStatusData, setBookingStatusData] = useState<any[]>([]);
   
   useEffect(() => {
     fetchStatistics();
-  }, [timeFrame]);
+  }, [timeFrame, customStartDate, customEndDate]);
+  
+  const handleTimeFrameChange = (value: string) => {
+    if (value === 'custom') {
+      // Default to last 7 days when switching to custom
+      if (!customStartDate) {
+        setCustomStartDate(addDays(new Date(), -7));
+        setCustomEndDate(new Date());
+      }
+      setShowCustomDatePicker(true);
+    } else {
+      setTimeFrame(value as '7days' | '30days' | '90days');
+      setShowCustomDatePicker(false);
+    }
+  };
+  
+  const applyCustomDateRange = () => {
+    if (customStartDate && customEndDate) {
+      setTimeFrame('custom');
+    }
+  };
   
   const fetchStatistics = async () => {
     try {
       setIsLoading(true);
+      setError(null);
       
-      // Fetch bookings statistics
+      // Get date range for queries
+      const dateRange = getDateRange(timeFrame, customStartDate, customEndDate);
+      const startDateStr = dateRange[0];
+      const endDateStr = dateRange[dateRange.length - 1];
+      
+      // Fetch bookings statistics within date range
       const { data: bookingsData, error: bookingsError } = await supabase
         .from('bookings')
-        .select('id, destination_name, status, created_at, price, num_travelers');
+        .select('id, destination_name, status, created_at, price, num_travelers')
+        .gte('created_at', `${startDateStr}T00:00:00`)
+        .lte('created_at', `${endDateStr}T23:59:59`);
         
       if (bookingsError) throw bookingsError;
       
-      const bookingsByStatus = {
-        pending: bookingsData?.filter(b => b.status === 'pending').length || 0,
-        confirmed: bookingsData?.filter(b => b.status === 'confirmed').length || 0,
-        completed: bookingsData?.filter(b => b.status === 'completed').length || 0,
-        cancelled: bookingsData?.filter(b => b.status === 'cancelled').length || 0
-      };
+      // Fetch all bookings for status counts
+      const { data: allBookingsData, error: allBookingsError } = await supabase
+        .from('bookings')
+        .select('id, status, price');
+        
+      if (allBookingsError) throw allBookingsError;
       
-      const totalRevenue = bookingsData?.reduce((sum, booking) => sum + (booking.price || 0), 0) || 0;
+      // Calculate booking stats
+      const stats = calculateBookingStats(allBookingsData || []);
+      setBookingsStats(stats);
+      
+      // Set status data for pie chart
+      setBookingStatusData([
+        { name: "Pending", value: stats.pending },
+        { name: "Confirmed", value: stats.confirmed },
+        { name: "Completed", value: stats.completed },
+        { name: "Cancelled", value: stats.cancelled }
+      ]);
+      
+      // Format booking trends data
+      const trendsData = formatBookingData(bookingsData || [], dateRange);
+      setBookingTrends(trendsData);
+      setRevenueData(trendsData);
       
       // Fetch users statistics
-      const { data: authData, error: authError } = await supabase.auth.admin.listUsers();
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, created_at');
+        
+      if (profilesError) throw profilesError;
       
-      if (authError) throw authError;
-      
-      const users = authData.users || [];
       const now = new Date();
       const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
       
-      const newUsers = users.filter((user: any) => {
-        return new Date(user.created_at) > firstDayOfMonth;
+      const newUsers = (profilesData || []).filter(user => 
+        new Date(user.created_at) >= firstDayOfMonth
+      );
+      
+      setUsersStats({
+        total: profilesData?.length || 0,
+        newThisMonth: newUsers.length
       });
       
       // Fetch destinations statistics
@@ -81,84 +141,18 @@ const StatsOverview = () => {
         mostBooked = sorted[0] ? { name: sorted[0].name, count: sorted[0].bookings_count || 0 } : mostBooked;
         
         // Set top destinations for pie chart
-        setTopDestinations(sorted.slice(0, 5).map(dest => ({
-          name: dest.name,
-          value: dest.bookings_count || 0
-        })));
+        const formattedDestinations = formatDestinationData(destinationsData);
+        setTopDestinations(formattedDestinations);
       }
-      
-      // Calculate booking trends based on timeframe
-      const days = timeFrame === '7days' ? 7 : timeFrame === '30days' ? 30 : 90;
-      const startDate = new Date();
-      startDate.setDate(startDate.getDate() - days);
-      
-      // Group bookings by date
-      const dateGroups: {[key: string]: number} = {};
-      
-      for (let i = 0; i < days; i++) {
-        const day = new Date(startDate);
-        day.setDate(startDate.getDate() + i);
-        const dateStr = day.toISOString().split('T')[0];
-        dateGroups[dateStr] = 0;
-      }
-      
-      bookingsData?.forEach(booking => {
-        const dateStr = new Date(booking.created_at).toISOString().split('T')[0];
-        if (dateGroups[dateStr] !== undefined) {
-          dateGroups[dateStr]++;
-        }
-      });
-      
-      // Format for chart
-      const trends = Object.entries(dateGroups).map(([date, count]) => {
-        // Format date to more readable format (e.g., May 15)
-        const dateObj = new Date(date);
-        const formattedDate = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-        return { name: formattedDate, bookings: count };
-      });
-      
-      setBookingTrends(trends);
-      
-      // Calculate revenue data
-      const revenueGroups: {[key: string]: number} = {...dateGroups};
-      Object.keys(revenueGroups).forEach(date => {
-        revenueGroups[date] = 0;
-      });
-      
-      bookingsData?.forEach(booking => {
-        const dateStr = new Date(booking.created_at).toISOString().split('T')[0];
-        if (revenueGroups[dateStr] !== undefined) {
-          revenueGroups[dateStr] += booking.price || 0;
-        }
-      });
-      
-      const revenueChartData = Object.entries(revenueGroups).map(([date, amount]) => {
-        const dateObj = new Date(date);
-        const formattedDate = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-        return { name: formattedDate, revenue: amount };
-      });
-      
-      setRevenueData(revenueChartData);
-      
-      // Set all stats
-      setBookingsStats({
-        total: bookingsData?.length || 0,
-        ...bookingsByStatus,
-        recentBookings: bookingsData?.slice(0, 5) || [],
-        revenue: totalRevenue
-      });
-      
-      setUsersStats({
-        total: users.length,
-        newThisMonth: newUsers.length
-      });
       
       setDestinationsStats({
         total: destinationsData?.length || 0,
         mostBooked
       });
-    } catch (error) {
+      
+    } catch (error: any) {
       console.error('Error fetching admin statistics:', error);
+      setError(error.message || 'An error occurred while fetching data');
     } finally {
       setIsLoading(false);
     }
@@ -172,17 +166,62 @@ const StatsOverview = () => {
     );
   }
   
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center py-10 space-y-4">
+        <AlertCircle className="h-12 w-12 text-red-500" />
+        <div className="text-center">
+          <h3 className="text-lg font-semibold">Error Loading Data</h3>
+          <p className="text-muted-foreground">{error}</p>
+        </div>
+        <Button onClick={fetchStatistics}>Retry</Button>
+      </div>
+    );
+  }
+  
   return (
     <div className="space-y-6">
       {/* Time period selector */}
-      <div className="flex justify-end">
-        <Tabs defaultValue={timeFrame} onValueChange={setTimeFrame}>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <Tabs defaultValue={timeFrame} onValueChange={handleTimeFrameChange} className="w-full sm:w-auto">
           <TabsList>
             <TabsTrigger value="7days">7 Days</TabsTrigger>
             <TabsTrigger value="30days">30 Days</TabsTrigger>
             <TabsTrigger value="90days">90 Days</TabsTrigger>
+            <TabsTrigger value="custom">Custom</TabsTrigger>
           </TabsList>
         </Tabs>
+        
+        {showCustomDatePicker && (
+          <div className="flex flex-col sm:flex-row gap-2 items-center">
+            <div className="flex items-center gap-2">
+              <span className="text-sm">From:</span>
+              <DatePicker
+                selected={customStartDate}
+                onChange={date => setCustomStartDate(date)}
+                maxDate={new Date()}
+                className="w-[180px]"
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-sm">To:</span>
+              <DatePicker
+                selected={customEndDate}
+                onChange={date => setCustomEndDate(date)}
+                minDate={customStartDate}
+                maxDate={new Date()}
+                className="w-[180px]"
+              />
+            </div>
+            <Button 
+              size="sm" 
+              onClick={applyCustomDateRange}
+              disabled={!customStartDate || !customEndDate}
+            >
+              Apply
+            </Button>
+          </div>
+        )}
       </div>
       
       {/* Overview Cards */}
@@ -195,7 +234,7 @@ const StatsOverview = () => {
           <CardContent>
             <div className="text-2xl font-bold">{bookingsStats.total}</div>
             <p className="text-xs text-muted-foreground">
-              +{bookingTrends.slice(-7).reduce((sum, day) => sum + day.bookings, 0)} in the last week
+              +{bookingTrends.reduce((sum, day) => sum + day.bookings, 0)} in the selected period
             </p>
           </CardContent>
         </Card>
@@ -208,7 +247,7 @@ const StatsOverview = () => {
           <CardContent>
             <div className="text-2xl font-bold">{formatPrice(bookingsStats.revenue)}</div>
             <p className="text-xs text-muted-foreground">
-              {formatPrice(revenueData.slice(-7).reduce((sum, day) => sum + day.revenue, 0))} in the last week
+              {formatPrice(revenueData.reduce((sum, day) => sum + day.revenue, 0))} in the selected period
             </p>
           </CardContent>
         </Card>
@@ -247,14 +286,16 @@ const StatsOverview = () => {
             <CardTitle>Booking Trends</CardTitle>
             <CardDescription>Number of bookings over time</CardDescription>
           </CardHeader>
-          <CardContent className="h-80">
+          <CardContent className="h-[300px]">
             <LineChart
               data={bookingTrends}
               categories={["bookings"]}
               index="name"
               colors={["amber"]}
               valueFormatter={(value) => `${value} bookings`}
-              yAxisWidth={50}
+              yAxisWidth={60}
+              height={250}
+              emptyMessage="No booking data available for the selected period"
             />
           </CardContent>
         </Card>
@@ -264,14 +305,16 @@ const StatsOverview = () => {
             <CardTitle>Revenue</CardTitle>
             <CardDescription>Revenue over time</CardDescription>
           </CardHeader>
-          <CardContent className="h-80">
+          <CardContent className="h-[300px]">
             <BarChart
               data={revenueData}
               categories={["revenue"]}
               index="name"
               colors={["amber"]}
               valueFormatter={(value) => formatPrice(value)}
-              yAxisWidth={60}
+              yAxisWidth={80}
+              height={250}
+              emptyMessage="No revenue data available for the selected period"
             />
           </CardContent>
         </Card>
@@ -283,13 +326,15 @@ const StatsOverview = () => {
             <CardTitle>Popular Destinations</CardTitle>
             <CardDescription>Most booked destinations</CardDescription>
           </CardHeader>
-          <CardContent className="h-80">
+          <CardContent className="h-[300px]">
             <PieChart
               data={topDestinations}
               category="value"
               index="name"
               colors={["amber", "indigo", "rose", "cyan", "emerald"]}
               valueFormatter={(value) => `${value} bookings`}
+              height={250}
+              emptyMessage="No destination booking data available"
             />
           </CardContent>
         </Card>
@@ -299,18 +344,15 @@ const StatsOverview = () => {
             <CardTitle>Booking Status</CardTitle>
             <CardDescription>Distribution by status</CardDescription>
           </CardHeader>
-          <CardContent className="h-80">
+          <CardContent className="h-[300px]">
             <PieChart
-              data={[
-                { name: "Pending", value: bookingsStats.pending },
-                { name: "Confirmed", value: bookingsStats.confirmed },
-                { name: "Completed", value: bookingsStats.completed },
-                { name: "Cancelled", value: bookingsStats.cancelled }
-              ]}
+              data={bookingStatusData}
               category="value"
               index="name"
               colors={["amber", "green", "blue", "red"]}
               valueFormatter={(value) => `${value} bookings`}
+              height={250}
+              emptyMessage="No booking status data available"
             />
           </CardContent>
         </Card>

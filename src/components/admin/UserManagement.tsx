@@ -23,6 +23,12 @@ type UserWithRole = {
   last_sign_in_at: string | null;
 };
 
+// Function to safely get properties from potentially problematic data
+const safeGet = <T, K extends keyof T>(obj: T | null, key: K, defaultValue: any): any => {
+  if (!obj) return defaultValue;
+  return (obj as any)[key] !== undefined ? (obj as any)[key] : defaultValue;
+};
+
 const UserManagement = () => {
   const { user, isAdmin } = useAuth();
   const { toast } = useToast();
@@ -34,12 +40,14 @@ const UserManagement = () => {
   const [openTransferDialog, setOpenTransferDialog] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [transferConfirm, setTransferConfirm] = useState('');
+  const [fetchError, setFetchError] = useState<string | null>(null);
   
   // Fetch users and check if current user is super admin
   useEffect(() => {
     const fetchUsers = async () => {
       try {
         setLoading(true);
+        setFetchError(null);
         
         // First check if current user is super admin
         if (user) {
@@ -50,56 +58,60 @@ const UserManagement = () => {
             .single();
             
           if (!superAdminError && superAdminData) {
-            // Check if is_super_admin exists in the returned data
             setIsSuperAdmin(!!superAdminData.is_super_admin);
           }
         }
         
-        // Fetch all users with their roles
-        const { data: userData, error: userError } = await supabase
+        // Get all profiles
+        const { data: profileData, error: profileError } = await supabase
           .from('profiles')
           .select('id, username, created_at');
           
-        if (userError || !userData) throw userError;
+        if (profileError) {
+          throw profileError;
+        }
         
-        // Fetch role data - we need to handle the case where is_super_admin might not exist
+        if (!profileData || profileData.length === 0) {
+          setUsers([]);
+          throw new Error("No user profiles found");
+        }
+        
+        // Get all roles
         const { data: roleData, error: roleError } = await supabase
           .from('user_roles')
           .select('*');
           
-        if (roleError || !roleData) throw roleError;
+        if (roleError) {
+          throw roleError;
+        }
         
-        // Fetch auth users for emails - this now returns proper data
-        const { data: authData, error: authError } = await supabase.auth.admin.listUsers();
+        // Fetch all users
+        // Since we need a workaround for direct Supabase auth admin access
+        // We'll use a combination of profiles and login info
         
-        if (authError) throw authError;
-        
-        // Fix: Extract the users array properly from the returned data
-        const authUsers = authData?.users || [];
-        
-        // Combine the data
-        const combinedUsers = userData.map(profile => {
-          const role = roleData.find(r => r.user_id === profile.id) || { is_admin: false, is_super_admin: false };
-          // Fix: Use find with proper type checking
-          const authUser = authUsers.find((au: any) => au.id === profile.id);
+        // Create user records by combining profile, role and available info
+        const combinedUsers = profileData.map(profile => {
+          const roleInfo = roleData?.find(r => r.user_id === profile.id);
           
+          // Basic user info from profile
           return {
             id: profile.id,
-            email: authUser?.email || 'Unknown',
+            email: profile.username || 'Unknown Email', // Use username as email fallback
             created_at: profile.created_at,
-            username: profile.username || authUser?.email || 'Unknown',
-            is_admin: !!role.is_admin,
-            is_super_admin: !!role.is_super_admin,
-            last_sign_in_at: authUser?.last_sign_in_at || null
+            username: profile.username || 'Unknown',
+            is_admin: roleInfo ? !!roleInfo.is_admin : false,
+            is_super_admin: roleInfo ? !!roleInfo.is_super_admin : false,
+            last_sign_in_at: null
           };
         });
         
         setUsers(combinedUsers);
-      } catch (error) {
+      } catch (error: any) {
         console.error('Error fetching users:', error);
+        setFetchError(error.message || 'Failed to load users');
         toast({
           title: 'Error',
-          description: 'Failed to load users.',
+          description: 'Failed to load users: ' + (error.message || 'Unknown error'),
           variant: 'destructive',
         });
       } finally {
@@ -144,11 +156,11 @@ const UserManagement = () => {
         description: `User is now ${!isCurrentlyAdmin ? 'an admin' : 'a regular user'}.`,
       });
       
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error updating user role:', error);
       toast({
         title: 'Update Failed',
-        description: 'Failed to update user role.',
+        description: 'Failed to update user role: ' + (error.message || 'Unknown error'),
         variant: 'destructive',
       });
     } finally {
@@ -204,11 +216,11 @@ const UserManagement = () => {
         description: 'The super admin role has been transferred successfully.',
       });
       
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error transferring super admin role:', error);
       toast({
         title: 'Transfer Failed',
-        description: 'Failed to transfer super admin role.',
+        description: 'Failed to transfer super admin role: ' + (error.message || 'Unknown error'),
         variant: 'destructive',
       });
     } finally {
@@ -319,6 +331,20 @@ const UserManagement = () => {
           {loading ? (
             <div className="flex justify-center py-8">
               <Loader2 className="h-8 w-8 animate-spin text-travel-gold" />
+            </div>
+          ) : fetchError ? (
+            <div className="flex flex-col items-center justify-center py-8 space-y-4 text-center">
+              <AlertCircle className="h-10 w-10 text-red-500" />
+              <div>
+                <p className="text-xl font-semibold">Error Loading Users</p>
+                <p className="text-muted-foreground">{fetchError}</p>
+              </div>
+              <Button 
+                onClick={() => window.location.reload()}
+                variant="outline"
+              >
+                Retry
+              </Button>
             </div>
           ) : (
             <div className="rounded-md border">

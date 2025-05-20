@@ -1,5 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
+import { format, subDays, parseISO, isValid } from 'date-fns';
 
 /**
  * Sets up the super admin user
@@ -96,4 +97,111 @@ export async function setupSuperAdmin() {
   } catch (error) {
     console.error('Error in setupSuperAdmin:', error);
   }
+}
+
+/**
+ * Get date range for analytics
+ * @param timeFrame - The time frame to get data for (7days, 30days, 90days, custom)
+ * @param startDate - Optional start date for custom range
+ * @param endDate - Optional end date for custom range
+ * @returns Array of dates in ISO format
+ */
+export function getDateRange(timeFrame: '7days' | '30days' | '90days' | 'custom', startDate?: Date, endDate?: Date) {
+  const today = new Date();
+  let start: Date;
+  const end = endDate && isValid(endDate) ? endDate : today;
+  
+  if (timeFrame === 'custom' && startDate && isValid(startDate)) {
+    start = startDate;
+  } else {
+    const days = timeFrame === '7days' ? 7 : timeFrame === '30days' ? 30 : 90;
+    start = subDays(today, days - 1);
+  }
+  
+  // Generate array of all dates in the range
+  const dates: string[] = [];
+  const currentDate = new Date(start);
+  
+  while (currentDate <= end) {
+    dates.push(format(currentDate, 'yyyy-MM-dd'));
+    currentDate.setDate(currentDate.getDate() + 1);
+  }
+  
+  return dates;
+}
+
+/**
+ * Format booking data for charts
+ * @param bookings - Raw booking data from database
+ * @param timeFrame - The time frame to format data for
+ * @returns Formatted data for charts
+ */
+export function formatBookingData(bookings: any[], dateRange: string[]) {
+  // Initialize data with all dates having 0 bookings
+  const formattedData = dateRange.map(date => ({
+    name: format(parseISO(date), 'MMM d'),
+    fullDate: date,
+    bookings: 0,
+    revenue: 0
+  }));
+  
+  // Populate with actual booking data
+  if (bookings && bookings.length > 0) {
+    bookings.forEach(booking => {
+      const bookingDate = booking.created_at.split('T')[0];
+      const dataPoint = formattedData.find(d => d.fullDate === bookingDate);
+      
+      if (dataPoint) {
+        dataPoint.bookings += 1;
+        dataPoint.revenue += Number(booking.price) || 0;
+      }
+    });
+  }
+  
+  return formattedData;
+}
+
+/**
+ * Format destination data for charts
+ * @param destinations - Raw destination data from database
+ * @returns Formatted data for pie chart
+ */
+export function formatDestinationData(destinations: any[]) {
+  if (!destinations || destinations.length === 0) return [];
+  
+  return destinations
+    .filter(d => d.bookings_count > 0)
+    .sort((a, b) => b.bookings_count - a.bookings_count)
+    .slice(0, 5)  // Take top 5
+    .map(dest => ({
+      name: dest.name,
+      value: dest.bookings_count
+    }));
+}
+
+/**
+ * Calculate booking stats by status
+ * @param bookings - Raw booking data
+ * @returns Stats object with counts for each status
+ */
+export function calculateBookingStats(bookings: any[]) {
+  if (!bookings || bookings.length === 0) {
+    return {
+      total: 0,
+      pending: 0,
+      confirmed: 0,
+      completed: 0,
+      cancelled: 0,
+      revenue: 0
+    };
+  }
+  
+  return {
+    total: bookings.length,
+    pending: bookings.filter(b => b.status === 'pending').length,
+    confirmed: bookings.filter(b => b.status === 'confirmed').length,
+    completed: bookings.filter(b => b.status === 'completed').length,
+    cancelled: bookings.filter(b => b.status === 'cancelled').length,
+    revenue: bookings.reduce((sum, booking) => sum + (Number(booking.price) || 0), 0)
+  };
 }
