@@ -46,10 +46,21 @@ export function DatePicker({
     if (onSelect) onSelect(date);
   };
 
-  // Create a disabled dates object based on minDate and maxDate
-  const disabledDates: { before?: Date; after?: Date } = {};
-  if (minDate) disabledDates.before = minDate;
-  if (maxDate) disabledDates.after = maxDate;
+  // Define the disabled dates function instead of using an object
+  const disabledDays = React.useCallback(
+    (date: Date) => {
+      // Check if date is before minDate
+      if (minDate && date < minDate) {
+        return true;
+      }
+      // Check if date is after maxDate
+      if (maxDate && date > maxDate) {
+        return true;
+      }
+      return false;
+    },
+    [minDate, maxDate]
+  );
 
   return (
     <Popover>
@@ -74,7 +85,7 @@ export function DatePicker({
           mode="single"
           selected={selected}
           onSelect={handleDateSelect}
-          disabled={Object.keys(disabledDates).length > 0 ? disabledDates : undefined}
+          disabled={minDate || maxDate ? disabledDays : undefined}
           initialFocus
           className={cn("p-3 pointer-events-auto")}
         />
