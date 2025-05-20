@@ -16,12 +16,25 @@ export async function setupSuperAdmin() {
       return;
     }
     
-    const users = userData.users || [];
+    // Find the super admin user by email
     const superAdminEmail = 'chandranshbinjola@gmail.com';
-    const superAdminUser = users.find((user: any) => user.email === superAdminEmail);
+    
+    // Get all users and find our super admin
+    const { data: allUsers, error: authError } = await supabase
+      .from('profiles')
+      .select('id, email')
+      .eq('email', superAdminEmail);
+      
+    if (authError) {
+      console.error('Error checking for super admin:', authError);
+      return;
+    }
+    
+    // Find any user that matches our super admin email
+    const superAdminUser = allUsers?.find(u => u.email === superAdminEmail);
     
     if (!superAdminUser) {
-      console.log('Super admin user not found in auth');
+      console.log('Super admin user not found:', superAdminEmail);
       return;
     }
     
@@ -97,6 +110,31 @@ export async function setupSuperAdmin() {
     
   } catch (error) {
     console.error('Error in setupSuperAdmin:', error);
+  }
+}
+
+/**
+ * Check if a user is a super admin
+ * @param userId - The user ID to check
+ * @returns Promise that resolves to boolean
+ */
+export async function isSuperAdmin(userId: string): Promise<boolean> {
+  try {
+    const { data, error } = await supabase
+      .from('user_roles')
+      .select('is_super_admin')
+      .eq('user_id', userId)
+      .single();
+      
+    if (error) {
+      console.error('Error checking super admin status:', error);
+      return false;
+    }
+    
+    return data?.is_super_admin === true;
+  } catch (error) {
+    console.error('Error in isSuperAdmin check:', error);
+    return false;
   }
 }
 

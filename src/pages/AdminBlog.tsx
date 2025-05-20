@@ -92,8 +92,17 @@ export function AdminBlog() {
   };
 
   // More vibrant colors for the charts
-  const categoryColors = ["indigo", "violet", "fuchsia", "pink", "rose", "orange", "amber", "yellow", "lime", "emerald"];
-  const authorColors = ["cyan", "sky", "blue", "violet", "purple", "fuchsia", "pink", "rose", "amber", "orange"];
+  const categoryColors = [
+    "#FF6B6B", "#4ECDC4", "#45B7D1", "#FFA07A", 
+    "#98D8C8", "#F06595", "#748FFC", "#7950F2", 
+    "#FAB005", "#20C997", "#82C91E", "#FF922B"
+  ];
+  
+  const authorColors = [
+    "#845EC2", "#D65DB1", "#FF6F91", "#FF9671", 
+    "#FFC75F", "#F9F871", "#2C73D2", "#0089BA", 
+    "#008E9B", "#00C9A7", "#C4FCEF", "#B39CD0"
+  ];
 
   return (
     <div className="container mx-auto py-6">

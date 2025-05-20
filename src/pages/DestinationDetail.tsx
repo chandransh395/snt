@@ -7,6 +7,12 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, Calendar, Users, Check, MapPin } from 'lucide-react';
 
+interface ItineraryDay {
+  day: string;
+  title: string;
+  description: string;
+}
+
 interface Destination {
   id: number;
   name: string;
@@ -15,6 +21,8 @@ interface Destination {
   description: string;
   price: string;
   tags: string[] | null;
+  duration_days?: number;
+  itinerary?: ItineraryDay[];
 }
 
 const DestinationDetail = () => {
@@ -55,31 +63,7 @@ const DestinationDetail = () => {
     }
   };
   
-  // Mock data for the itinerary
-  const itinerary = [
-    {
-      day: "Day 1-2",
-      title: "Arrival & Exploration",
-      description: "Arrive at your destination and check in to your accommodation. Spend the first two days exploring the local area and getting oriented."
-    },
-    {
-      day: "Day 3-4",
-      title: "Cultural Immersion",
-      description: "Visit historic sites, museums, and landmarks. Experience local traditions and sample authentic cuisine."
-    },
-    {
-      day: "Day 5-6",
-      title: "Nature & Adventure",
-      description: "Explore natural attractions with guided excursions. Options for hiking, water activities, or wildlife viewing depending on the destination."
-    },
-    {
-      day: "Day 7",
-      title: "Leisure & Departure",
-      description: "Free time for shopping or relaxation. Check out and transfer to the airport for your departure."
-    }
-  ];
-  
-  // Mock data for the included features
+  // Default included features
   const included = [
     "Accommodation in 4-star hotels",
     "Daily breakfast and selected meals",
@@ -89,7 +73,7 @@ const DestinationDetail = () => {
     "Welcome dinner with cultural performance"
   ];
   
-  // Mock data for the not included features
+  // Default not included features
   const notIncluded = [
     "International airfare",
     "Travel insurance",
@@ -117,6 +101,32 @@ const DestinationDetail = () => {
       </div>
     );
   }
+
+  // Get itinerary from destination data or use default if not available
+  const itinerary = destination.itinerary && destination.itinerary.length > 0 
+    ? destination.itinerary 
+    : [
+      {
+        day: "Day 1-2",
+        title: "Arrival & Exploration",
+        description: "Arrive at your destination and check in to your accommodation. Spend the first two days exploring the local area and getting oriented."
+      },
+      {
+        day: "Day 3-4",
+        title: "Cultural Immersion",
+        description: "Visit historic sites, museums, and landmarks. Experience local traditions and sample authentic cuisine."
+      },
+      {
+        day: "Day 5-6",
+        title: "Nature & Adventure",
+        description: "Explore natural attractions with guided excursions. Options for hiking, water activities, or wildlife viewing depending on the destination."
+      },
+      {
+        day: "Day 7",
+        title: "Leisure & Departure",
+        description: "Free time for shopping or relaxation. Check out and transfer to the airport for your departure."
+      }
+    ];
 
   return (
     <>
@@ -202,7 +212,9 @@ const DestinationDetail = () => {
             
             {/* Itinerary */}
             <section className="mb-16">
-              <h2 className="text-2xl font-bold mb-6 border-b pb-2 font-sans">Sample Itinerary</h2>
+              <h2 className="text-2xl font-bold mb-6 border-b pb-2 font-sans">
+                {destination.duration_days ? `${destination.duration_days}-Day Itinerary` : 'Sample Itinerary'}
+              </h2>
               <div className="space-y-8">
                 {itinerary.map((item, index) => (
                   <div key={index} className="relative pl-8 border-l-2 border-travel-gold/30">
@@ -232,7 +244,7 @@ const DestinationDetail = () => {
                 <ul className="space-y-2">
                   <li className="flex items-start">
                     <Calendar className="h-5 w-5 text-travel-gold mr-2 flex-shrink-0 mt-0.5" />
-                    <span>7 days / 6 nights</span>
+                    <span>{destination.duration_days || 7} days / {(destination.duration_days || 7) - 1} nights</span>
                   </li>
                   <li className="flex items-start">
                     <Users className="h-5 w-5 text-travel-gold mr-2 flex-shrink-0 mt-0.5" />

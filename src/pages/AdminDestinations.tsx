@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Navigate } from 'react-router-dom';
@@ -12,7 +13,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { X, Edit, Plus, Trash2 } from 'lucide-react';
+import { X, Edit, Plus, Trash2, Calendar } from 'lucide-react';
 import { formatPrice } from '@/utils/currency';
 import { supabase } from '@/integrations/supabase/client';
 import TagsRegionsManager from '@/components/admin/TagsRegionsManager';
@@ -27,6 +28,14 @@ type Destination = {
   tags: string[] | null;
   top_booked?: boolean;
   bookings_count?: number;
+  duration_days?: number;
+  itinerary?: ItineraryDay[];
+};
+
+type ItineraryDay = {
+  day: string;
+  title: string;
+  description: string;
 };
 
 type Tag = {
@@ -59,9 +68,21 @@ const AdminDestinations = () => {
     price: '',
     tags: [],
     top_booked: false,
-    bookings_count: 0
+    bookings_count: 0,
+    duration_days: 7,
+    itinerary: []
   });
   const [selectedTag, setSelectedTag] = useState('');
+
+  // Itinerary state
+  const [itineraryFormOpen, setItineraryFormOpen] = useState(false);
+  const [currentItineraryItem, setCurrentItineraryItem] = useState<ItineraryDay>({
+    day: '',
+    title: '',
+    description: ''
+  });
+  const [isEditingItinerary, setIsEditingItinerary] = useState(false);
+  const [editItineraryIndex, setEditItineraryIndex] = useState<number | null>(null);
   
   // Redirect if not logged in or not an admin
   if (!user) {
@@ -202,6 +223,70 @@ const AdminDestinations = () => {
       }
     }
   };
+
+  // Itinerary handlers
+  const handleOpenItineraryForm = () => {
+    setItineraryFormOpen(true);
+    setCurrentItineraryItem({
+      day: '',
+      title: '',
+      description: ''
+    });
+    setIsEditingItinerary(false);
+    setEditItineraryIndex(null);
+  };
+
+  const handleEditItineraryItem = (item: ItineraryDay, index: number) => {
+    setCurrentItineraryItem(item);
+    setIsEditingItinerary(true);
+    setEditItineraryIndex(index);
+    setItineraryFormOpen(true);
+  };
+
+  const handleDeleteItineraryItem = (index: number) => {
+    const updatedItinerary = [...(currentDestination.itinerary || [])];
+    updatedItinerary.splice(index, 1);
+    setCurrentDestination({
+      ...currentDestination,
+      itinerary: updatedItinerary
+    });
+  };
+
+  const handleItineraryInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setCurrentItineraryItem({
+      ...currentItineraryItem,
+      [name]: value
+    });
+  };
+
+  const handleSaveItineraryItem = () => {
+    if (!currentItineraryItem.day || !currentItineraryItem.title) {
+      toast({
+        title: 'Error',
+        description: 'Day and title are required for itinerary items.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const updatedItinerary = [...(currentDestination.itinerary || [])];
+    
+    if (isEditingItinerary && editItineraryIndex !== null) {
+      // Edit existing item
+      updatedItinerary[editItineraryIndex] = currentItineraryItem;
+    } else {
+      // Add new item
+      updatedItinerary.push(currentItineraryItem);
+    }
+
+    setCurrentDestination({
+      ...currentDestination,
+      itinerary: updatedItinerary
+    });
+
+    setItineraryFormOpen(false);
+  };
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -227,7 +312,9 @@ const AdminDestinations = () => {
             price: currentDestination.price,
             tags: currentDestination.tags,
             top_booked: currentDestination.top_booked,
-            bookings_count: currentDestination.bookings_count
+            bookings_count: currentDestination.bookings_count,
+            duration_days: currentDestination.duration_days || 7,
+            itinerary: currentDestination.itinerary
           })
           .eq('id', currentDestination.id!);
           
@@ -248,7 +335,9 @@ const AdminDestinations = () => {
             price: currentDestination.price,
             tags: currentDestination.tags,
             top_booked: currentDestination.top_booked || false,
-            bookings_count: currentDestination.bookings_count || 0
+            bookings_count: currentDestination.bookings_count || 0,
+            duration_days: currentDestination.duration_days || 7,
+            itinerary: currentDestination.itinerary || []
           });
           
         if (error) throw error;
@@ -281,7 +370,9 @@ const AdminDestinations = () => {
       price: '',
       tags: [],
       top_booked: false,
-      bookings_count: 0
+      bookings_count: 0,
+      duration_days: 7,
+      itinerary: []
     });
     setIsEditing(false);
   };
@@ -330,6 +421,7 @@ const AdminDestinations = () => {
                       <TableHead>Name</TableHead>
                       <TableHead>Region</TableHead>
                       <TableHead>Price</TableHead>
+                      <TableHead>Duration</TableHead>
                       <TableHead>Top Booked</TableHead>
                       <TableHead>Tags</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
@@ -338,7 +430,7 @@ const AdminDestinations = () => {
                   <TableBody>
                     {destinations.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={6} className="text-center">No destinations found</TableCell>
+                        <TableCell colSpan={7} className="text-center">No destinations found</TableCell>
                       </TableRow>
                     ) : (
                       destinations.map((destination) => (
@@ -346,6 +438,7 @@ const AdminDestinations = () => {
                           <TableCell className="font-medium">{destination.name}</TableCell>
                           <TableCell className="capitalize">{destination.region}</TableCell>
                           <TableCell>{destination.price}</TableCell>
+                          <TableCell>{destination.duration_days || 7} days</TableCell>
                           <TableCell>
                             {destination.top_booked ? 
                               <Badge variant="default" className="bg-green-500">Yes</Badge> : 
@@ -393,7 +486,7 @@ const AdminDestinations = () => {
       </Tabs>
       
       <Dialog open={formOpen} onOpenChange={setFormOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-4xl">
           <DialogHeader>
             <DialogTitle>{isEditing ? 'Edit Destination' : 'Add New Destination'}</DialogTitle>
             <DialogDescription>
@@ -404,7 +497,7 @@ const AdminDestinations = () => {
           </DialogHeader>
           
           <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <Label htmlFor="name">Destination Name</Label>
                 <Input
@@ -451,8 +544,27 @@ const AdminDestinations = () => {
                   required
                 />
               </div>
-              
+
               <div>
+                <Label htmlFor="duration_days">Duration (Days)</Label>
+                <Input
+                  id="duration_days"
+                  name="duration_days"
+                  type="number"
+                  min="1"
+                  value={currentDestination.duration_days || 7}
+                  onChange={(e) => setCurrentDestination({
+                    ...currentDestination,
+                    duration_days: parseInt(e.target.value) || 7
+                  })}
+                  required
+                />
+                <p className="text-sm text-muted-foreground mt-1">
+                  Number of days for this trip
+                </p>
+              </div>
+              
+              <div className="md:col-span-2">
                 <Label htmlFor="description">Description</Label>
                 <Textarea
                   id="description"
@@ -475,8 +587,11 @@ const AdminDestinations = () => {
                   placeholder="e.g. From ₹1,299"
                   required
                 />
+                <p className="text-sm text-muted-foreground mt-1">
+                  Include "From" if price is per person
+                </p>
               </div>
-              
+
               <div className="flex flex-col gap-2">
                 <div className="flex items-center gap-2">
                   <input
@@ -505,12 +620,12 @@ const AdminDestinations = () => {
                   onChange={handleInputChange}
                   placeholder="0"
                 />
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm text-muted-foreground mt-1">
                   This will affect the sorting of top booked destinations
                 </p>
               </div>
               
-              <div>
+              <div className="md:col-span-2">
                 <Label htmlFor="tags">Tags</Label>
                 <div className="flex gap-2 mb-2">
                   <Select value={selectedTag} onValueChange={setSelectedTag}>
@@ -552,6 +667,58 @@ const AdminDestinations = () => {
                   ))}
                 </div>
               </div>
+              
+              <div className="md:col-span-2">
+                <div className="flex items-center justify-between mb-4">
+                  <Label htmlFor="itinerary">Day-by-Day Itinerary</Label>
+                  <Button type="button" variant="outline" size="sm" onClick={handleOpenItineraryForm}>
+                    <Plus className="h-4 w-4 mr-1" /> Add Day
+                  </Button>
+                </div>
+
+                {(currentDestination.itinerary && currentDestination.itinerary.length > 0) ? (
+                  <div className="border rounded-md divide-y">
+                    {currentDestination.itinerary.map((item, index) => (
+                      <div key={index} className="p-4 flex items-start justify-between">
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <Calendar className="h-4 w-4 text-travel-gold" />
+                            <h4 className="font-medium">{item.day}</h4>
+                          </div>
+                          <h5 className="font-semibold mt-1">{item.title}</h5>
+                          <p className="text-sm text-muted-foreground mt-1">{item.description}</p>
+                        </div>
+                        <div className="flex gap-2 ml-4">
+                          <Button 
+                            type="button" 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={() => handleEditItineraryItem(item, index)}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button 
+                            type="button" 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={() => handleDeleteItineraryItem(index)}
+                          >
+                            <Trash2 className="h-4 w-4 text-red-500" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="bg-muted rounded-md p-6 text-center">
+                    <Calendar className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
+                    <p>No itinerary items added yet</p>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Add day-by-day activities for this destination
+                    </p>
+                  </div>
+                )}
+              </div>
             </div>
 
             <DialogFooter>
@@ -570,6 +737,70 @@ const AdminDestinations = () => {
               </Button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Itinerary Item Dialog */}
+      <Dialog open={itineraryFormOpen} onOpenChange={setItineraryFormOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{isEditingItinerary ? 'Edit Itinerary Day' : 'Add Itinerary Day'}</DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="itinerary-day">Day</Label>
+              <Input
+                id="itinerary-day"
+                name="day"
+                value={currentItineraryItem.day}
+                onChange={handleItineraryInputChange}
+                placeholder="e.g. Day 1-2 or Day 3"
+                required
+              />
+            </div>
+            
+            <div>
+              <Label htmlFor="itinerary-title">Title</Label>
+              <Input
+                id="itinerary-title"
+                name="title"
+                value={currentItineraryItem.title}
+                onChange={handleItineraryInputChange}
+                placeholder="e.g. Arrival & City Tour"
+                required
+              />
+            </div>
+            
+            <div>
+              <Label htmlFor="itinerary-description">Description</Label>
+              <Textarea
+                id="itinerary-description"
+                name="description"
+                value={currentItineraryItem.description}
+                onChange={handleItineraryInputChange}
+                placeholder="Describe the activities for this day..."
+                rows={3}
+              />
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={() => setItineraryFormOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button 
+              type="button" 
+              onClick={handleSaveItineraryItem} 
+              className="bg-travel-gold hover:bg-amber-600 text-black"
+            >
+              {isEditingItinerary ? 'Update' : 'Add'} Day
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

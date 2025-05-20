@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -40,6 +40,8 @@ const BookingPage = () => {
   const [duration, setDuration] = useState(1); // Default 1 day
   const [totalPrice, setTotalPrice] = useState('');
   const [basePrice, setBasePrice] = useState('');
+  const [pricePerPerson, setPricePerPerson] = useState(0);
+  const [numTravelers, setNumTravelers] = useState(1);
   
   // Set up React Hook Form with zod validation
   const form = useForm<BookingFormValues>({
@@ -52,6 +54,13 @@ const BookingPage = () => {
       specialRequests: '',
     },
   });
+  
+  // Watch for changes to number of travelers
+  const watchedNumTravelers = form.watch('numTravelers');
+  
+  useEffect(() => {
+    setNumTravelers(watchedNumTravelers || 1);
+  }, [watchedNumTravelers]);
   
   // Fetch destination data
   useEffect(() => {
@@ -67,10 +76,14 @@ const BookingPage = () => {
         
         if (data) {
           setDestination(data);
-          // Parse the price string to a number
-          const priceValue = parseFloat(data.price.replace(/[^0-9.-]+/g, ''));
+          // Parse the price string to a number (removing "From" prefix if exists)
+          const priceString = data.price.replace(/From\s+/i, '').replace(/[^0-9.-]+/g, '');
+          const priceValue = parseFloat(priceString);
           setBasePrice(data.price);
-          setTotalPrice(formatPrice(priceValue * duration));
+          setPricePerPerson(priceValue);
+          
+          // Calculate the initial total price
+          updateTotalPrice(priceValue, numTravelers, duration);
         }
       } catch (err) {
         console.error('Error fetching destination:', err);
@@ -85,15 +98,18 @@ const BookingPage = () => {
     }
     
     fetchDestination();
-  }, [id, toast, duration]);
+  }, [id, toast]);
   
-  // Update price when duration changes
+  // Update price when duration or number of travelers changes
   useEffect(() => {
-    if (destination) {
-      const priceValue = parseFloat(destination.price.replace(/[^0-9.-]+/g, ''));
-      setTotalPrice(formatPrice(priceValue * duration));
-    }
-  }, [duration, destination]);
+    updateTotalPrice(pricePerPerson, numTravelers, duration);
+  }, [duration, pricePerPerson, numTravelers]);
+  
+  // Function to calculate and update the total price
+  const updateTotalPrice = (basePrice: number, travelers: number, days: number) => {
+    const total = basePrice * days * travelers;
+    setTotalPrice(formatPrice(total));
+  };
   
   const onSubmit = async (data: BookingFormValues) => {
     if (!destination) return;
@@ -101,8 +117,8 @@ const BookingPage = () => {
     try {
       setSubmitting(true);
       
-      // Convert price string to number for database
-      const priceValue = parseFloat(destination.price.replace(/[^0-9.-]+/g, '')) * duration;
+      // Calculate final price
+      const priceValue = pricePerPerson * data.numTravelers * duration;
       
       const bookingData = {
         destination_id: destination.id,
@@ -217,12 +233,15 @@ const BookingPage = () => {
                 
                 <div className="flex items-baseline justify-between">
                   <div>
-                    <span className="text-sm text-muted-foreground">Base price</span>
+                    <span className="text-sm text-muted-foreground">Base price (per person)</span>
                     <p className="font-medium">{basePrice}</p>
                   </div>
                   <div>
                     <span className="text-sm text-muted-foreground">Total price</span>
                     <p className="text-xl font-semibold text-travel-gold">{totalPrice}</p>
+                    <span className="text-xs text-muted-foreground">
+                      For {numTravelers} {numTravelers === 1 ? 'person' : 'people'}, {duration} {duration === 1 ? 'day' : 'days'}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -278,6 +297,9 @@ const BookingPage = () => {
                     min={1} 
                     max={20}
                     {...form.register('numTravelers', { valueAsNumber: true })}
+                    onChange={(e) => {
+                      form.setValue('numTravelers', parseInt(e.target.value) || 1, { shouldValidate: true });
+                    }}
                   />
                   {form.formState.errors.numTravelers && (
                     <p className="text-red-500 text-sm">{form.formState.errors.numTravelers.message}</p>
