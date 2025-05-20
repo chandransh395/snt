@@ -159,11 +159,11 @@ export function AdminBlog() {
     try {
       setIsLoading(true);
       
-      // Fetch all blog posts
+      // Fetch all blog posts - Fixing the invalid nullsLast property
       const { data, error } = await supabase
         .from('blog_posts')
         .select('*')
-        .order('published_at', { ascending: false, nullsLast: true });
+        .order('published_at', { ascending: false, nullsFirst: false });
       
       if (error) throw error;
       

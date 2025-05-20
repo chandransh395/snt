@@ -32,7 +32,7 @@ function App() {
         <SecurityHeaders />
         <ErrorBoundary>
           <Routes>
-            <Route path="/" element={<Layout />}>
+            <Route path="/" element={<Layout>{/* Layout expects children prop */}</Layout>}>
               <Route index element={<Home />} />
               <Route path="about" element={<About />} />
               <Route path="contact" element={<Contact />} />
@@ -47,7 +47,7 @@ function App() {
             </Route>
             
             <Route path="/admin" element={
-              <ProtectedRoute requiredRole="admin">
+              <ProtectedRoute requiresAdmin={true}> {/* Changed from requiredRole to requiresAdmin */}
                 <AdminLayout />
               </ProtectedRoute>
             }>
