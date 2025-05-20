@@ -11,7 +11,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Icons } from '@/components/ui/icons';
-import { Shield, ShieldCheck, ShieldAlert, User, AlertCircle, Loader2, UserPlus } from 'lucide-react';
+import { Shield, ShieldCheck, ShieldAlert, UserRound, AlertCircle, Loader2, UserX, UserPlus } from 'lucide-react';
 
 type UserWithRole = {
   id: string;
@@ -86,10 +86,6 @@ const UserManagement = () => {
           throw roleError;
         }
         
-        // Fetch all users
-        // Since we need a workaround for direct Supabase auth admin access
-        // We'll use a combination of profiles and login info
-        
         // Create user records by combining profile, role and available info
         const combinedUsers = profileData.map(profile => {
           const roleInfo = roleData?.find(r => r.user_id === profile.id);
@@ -136,6 +132,16 @@ const UserManagement = () => {
           title: 'Permission Denied',
           description: 'Only super admins can modify super admin accounts.',
           variant: 'destructive',
+        });
+        return;
+      }
+      
+      // Regular admins can't revoke admin privileges from other admins
+      if (!isSuperAdmin && isCurrentlyAdmin) {
+        toast({
+          title: 'Permission Denied',
+          description: 'Only super admins can revoke admin privileges.',
+          variant: 'destructive', 
         });
         return;
       }
@@ -295,6 +301,10 @@ const UserManagement = () => {
       </Card>
     );
   }
+  
+  const isSuperAdminEmail = (email: string) => {
+    return email.toLowerCase() === 'chandranshbinjola@gmail.com';
+  };
 
   return (
     <div className="space-y-6">
@@ -407,7 +417,7 @@ const UserManagement = () => {
                     <TableHead>User</TableHead>
                     <TableHead>Role</TableHead>
                     <TableHead>Joined</TableHead>
-                    <TableHead>Last Active</TableHead>
+                    <TableHead>Email Address</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -424,12 +434,14 @@ const UserManagement = () => {
                         <TableCell>
                           <div className="flex flex-col">
                             <span className="font-medium">{user.username || user.email}</span>
-                            {user.username !== user.email && <span className="text-sm text-muted-foreground">{user.email}</span>}
                           </div>
                         </TableCell>
                         <TableCell>
                           {user.is_super_admin ? (
-                            <Badge className="bg-purple-600">Super Admin</Badge>
+                            <Badge className="bg-purple-600 flex items-center gap-1">
+                              <ShieldAlert className="h-3 w-3" />
+                              Super Admin
+                            </Badge>
                           ) : user.is_admin ? (
                             <Badge>Admin</Badge>
                           ) : (
@@ -440,12 +452,17 @@ const UserManagement = () => {
                           {new Date(user.created_at).toLocaleDateString()}
                         </TableCell>
                         <TableCell>
-                          {user.last_sign_in_at ? new Date(user.last_sign_in_at).toLocaleDateString() : 'Never'}
+                          <span className="text-muted-foreground">{user.email}</span>
+                          {isSuperAdminEmail(user.email) && (
+                            <Badge variant="outline" className="ml-2 text-xs bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 border-purple-300 dark:border-purple-700">
+                              Designated Super Admin
+                            </Badge>
+                          )}
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-1">
                             {/* Super Admin Management (only for super admins) */}
-                            {isSuperAdmin && user.id !== user?.id && (
+                            {isSuperAdmin && user.id !== user?.id && !isSuperAdminEmail(user.email) && (
                               <AlertDialog>
                                 <AlertDialogTrigger asChild>
                                   <Button
@@ -487,7 +504,8 @@ const UserManagement = () => {
                             )}
                             
                             {/* Regular Admin Toggle */}
-                            {(user.id !== user?.id || !user.is_super_admin) && (
+                            {(isSuperAdmin || (!user.is_admin && !user.is_super_admin)) && 
+                              (user.id !== user?.id || !user.is_super_admin) && !isSuperAdminEmail(user.email) && (
                               <AlertDialog>
                                 <AlertDialogTrigger asChild>
                                   <Button
@@ -495,25 +513,25 @@ const UserManagement = () => {
                                     size="icon"
                                     className="h-8 w-8"
                                     disabled={updatingUser === user.id || (!isSuperAdmin && user.is_admin) || (user.is_super_admin && !isSuperAdmin)}
-                                    title={user.is_admin ? "Remove Admin Rights" : "Make Admin"}
+                                    title={user.is_admin ? "Revoke Admin Rights" : "Grant Admin Rights"}
                                   >
                                     {updatingUser === user.id ? (
                                       <Loader2 className="h-4 w-4 animate-spin" />
                                     ) : user.is_admin ? (
-                                      <Shield className="h-4 w-4 text-amber-500" />
+                                      <UserX className="h-4 w-4 text-red-500" />
                                     ) : (
-                                      <User className="h-4 w-4" />
+                                      <UserRound className="h-4 w-4" />
                                     )}
                                   </Button>
                                 </AlertDialogTrigger>
                                 <AlertDialogContent>
                                   <AlertDialogHeader>
                                     <AlertDialogTitle>
-                                      {user.is_admin ? 'Remove Admin Rights?' : 'Make User an Admin?'}
+                                      {user.is_admin ? 'Revoke Admin Rights?' : 'Grant Admin Rights?'}
                                     </AlertDialogTitle>
                                     <AlertDialogDescription>
                                       {user.is_admin 
-                                        ? 'This will remove admin privileges from this user.'
+                                        ? 'This will remove admin privileges from this user. Only super admins can revoke admin privileges.'
                                         : 'This will grant admin privileges to this user, allowing them to access the admin panel and manage content.'
                                       }
                                     </AlertDialogDescription>
@@ -521,7 +539,7 @@ const UserManagement = () => {
                                   <AlertDialogFooter>
                                     <AlertDialogCancel>Cancel</AlertDialogCancel>
                                     <AlertDialogAction onClick={() => toggleAdminRole(user.id, user.is_admin)}>
-                                      {user.is_admin ? 'Remove Admin' : 'Make Admin'}
+                                      {user.is_admin ? 'Revoke Admin Rights' : 'Grant Admin Rights'}
                                     </AlertDialogAction>
                                   </AlertDialogFooter>
                                 </AlertDialogContent>
@@ -548,7 +566,7 @@ const UserManagement = () => {
             <p>
               {isSuperAdmin 
                 ? 'You are a super admin and can manage all users' 
-                : 'Only super admins can modify admin accounts'}
+                : 'Only super admins can modify admin accounts or revoke admin rights'}
             </p>
           </div>
         </CardFooter>

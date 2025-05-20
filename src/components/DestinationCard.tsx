@@ -1,5 +1,5 @@
 
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { formatPrice } from '@/utils/currency';
@@ -23,6 +23,12 @@ interface DestinationCardProps {
 }
 
 const DestinationCard: React.FC<DestinationCardProps> = ({ destination, index = 0 }) => {
+  const navigate = useNavigate();
+  
+  const handleCardClick = () => {
+    navigate(`/destinations/${destination.id}`);
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -30,49 +36,44 @@ const DestinationCard: React.FC<DestinationCardProps> = ({ destination, index = 
       transition={{ duration: 0.3, delay: index * 0.1 }}
       whileHover={{ y: -5 }}
       className="h-full"
+      onClick={handleCardClick}
     >
-      <Link
-        key={destination.id}
-        to={`/destinations/${destination.id}`}
-        className="block hover:no-underline h-full"
-      >
-        <Card className="overflow-hidden h-full transition-all duration-300 hover:shadow-lg border-muted/40">
-          <div className="relative h-52 overflow-hidden">
-            <img
-              src={destination.image}
-              alt={destination.name}
-              className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
-              loading="lazy"
-            />
-            {destination.top_booked && (
-              <div className="absolute top-2 right-2">
-                <Badge className="bg-amber-500 text-white font-medium px-3 py-1">Popular</Badge>
-              </div>
-            )}
-            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-4 text-white">
-              <h3 className="text-xl font-semibold mb-1">{destination.name}</h3>
-              <div className="flex items-center justify-between">
-                <span className="text-sm capitalize opacity-90">{destination.region}</span>
-                <span className="text-sm font-medium bg-black/30 px-2 py-1 rounded">{formatPrice(destination.price)}</span>
-              </div>
+      <Card className="overflow-hidden h-full transition-all duration-300 hover:shadow-lg border-muted/40 cursor-pointer">
+        <div className="relative h-52 overflow-hidden">
+          <img
+            src={destination.image}
+            alt={destination.name}
+            className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
+            loading="lazy"
+          />
+          {destination.top_booked && (
+            <div className="absolute top-2 right-2">
+              <Badge className="bg-amber-500 text-white font-medium px-3 py-1">Popular</Badge>
+            </div>
+          )}
+          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-4 text-white">
+            <h3 className="text-xl font-semibold mb-1">{destination.name}</h3>
+            <div className="flex items-center justify-between">
+              <span className="text-sm capitalize opacity-90">{destination.region}</span>
+              <span className="text-sm font-medium bg-black/30 px-2 py-1 rounded">{formatPrice(destination.price)}</span>
             </div>
           </div>
+        </div>
 
-          <CardContent className="p-4">
-            <p className="text-sm line-clamp-3 text-muted-foreground mb-4">
-              {destination.description}
-            </p>
+        <CardContent className="p-4">
+          <p className="text-sm line-clamp-3 text-muted-foreground mb-4">
+            {destination.description}
+          </p>
 
-            <div className="flex flex-wrap gap-1 mt-auto">
-              {destination.tags?.slice(0, 3).map((tag, idx) => (
-                <Badge key={idx} variant="outline" className="text-xs">
-                  {tag}
-                </Badge>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      </Link>
+          <div className="flex flex-wrap gap-1 mt-auto">
+            {destination.tags?.slice(0, 3).map((tag, idx) => (
+              <Badge key={idx} variant="outline" className="text-xs">
+                {tag}
+              </Badge>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
     </motion.div>
   );
 };

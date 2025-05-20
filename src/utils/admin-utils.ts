@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { format, subDays, parseISO, isValid } from 'date-fns';
 
@@ -8,15 +7,7 @@ import { format, subDays, parseISO, isValid } from 'date-fns';
  */
 export async function setupSuperAdmin() {
   try {
-    // First check if the email exists in auth
-    const { data: userData, error: userError } = await supabase.auth.admin.listUsers();
-    
-    if (userError) {
-      console.error('Error fetching users:', userError);
-      return;
-    }
-    
-    // Find the super admin user by email
+    // Define the designated super admin email
     const superAdminEmail = 'chandranshbinjola@gmail.com';
     
     // Get all users and find our super admin
@@ -34,7 +25,7 @@ export async function setupSuperAdmin() {
     const superAdminUser = allUsers?.find(u => u.email === superAdminEmail);
     
     if (!superAdminUser) {
-      console.log('Super admin user not found:', superAdminEmail);
+      console.log('Designated super admin user not found. It will be set up when they first sign up:', superAdminEmail);
       return;
     }
     
@@ -82,31 +73,7 @@ export async function setupSuperAdmin() {
       }
     }
     
-    // Ensure user has a profile
-    const { data: profileData, error: profileError } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', superAdminUser.id)
-      .single();
-      
-    if (profileError && profileError.code !== 'PGRST116') {
-      console.error('Error checking profile:', profileError);
-    }
-    
-    if (!profileData) {
-      // Create profile for the user
-      const { error: createProfileError } = await supabase
-        .from('profiles')
-        .insert({
-          id: superAdminUser.id,
-          username: superAdminEmail.split('@')[0],
-          created_at: new Date().toISOString()
-        });
-        
-      if (createProfileError) {
-        console.error('Error creating profile:', createProfileError);
-      }
-    }
+    // Ensure user has a profile if needed (already checked above)
     
   } catch (error) {
     console.error('Error in setupSuperAdmin:', error);

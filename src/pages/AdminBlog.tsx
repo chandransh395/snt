@@ -5,6 +5,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
+import { Home } from "lucide-react";
+import { Link } from "react-router-dom";
 
 export function AdminBlog() {
   const [blogStats, setBlogStats] = useState({
@@ -91,7 +94,7 @@ export function AdminBlog() {
     }
   };
 
-  // More vibrant colors for the charts
+  // More vibrant colors for the charts that work in both light and dark modes
   const categoryColors = [
     "#FF6B6B", "#4ECDC4", "#45B7D1", "#FFA07A", 
     "#98D8C8", "#F06595", "#748FFC", "#7950F2", 
@@ -112,7 +115,7 @@ export function AdminBlog() {
       </header>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-        <Card>
+        <Card className="dark:border-muted">
           <CardHeader>
             <CardTitle>Posts by Category</CardTitle>
             <CardDescription>Distribution of blog posts across categories</CardDescription>
@@ -126,11 +129,12 @@ export function AdminBlog() {
               valueFormatter={(value) => `${value} posts`}
               height={250}
               emptyMessage="No category data available"
+              className="dark:text-foreground [&_.recharts-text]:dark:fill-foreground [&_.recharts-legend-item-text]:dark:text-foreground"
             />
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="dark:border-muted">
           <CardHeader>
             <CardTitle>Posts by Author</CardTitle>
             <CardDescription>Blog posts per author</CardDescription>
@@ -144,6 +148,7 @@ export function AdminBlog() {
               valueFormatter={(value) => `${value} posts`}
               height={250}
               emptyMessage="No author data available"
+              className="dark:text-foreground [&_.recharts-text]:dark:fill-foreground [&_.recharts-legend-item-text]:dark:text-foreground"
             />
           </CardContent>
         </Card>
@@ -152,5 +157,4 @@ export function AdminBlog() {
   );
 }
 
-// Export as default for use in App.tsx
 export default AdminBlog;
