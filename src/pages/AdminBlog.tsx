@@ -129,7 +129,7 @@ export function AdminBlog() {
               valueFormatter={(value) => `${value} posts`}
               height={250}
               emptyMessage="No category data available"
-              className="dark:text-foreground [&_.recharts-text]:dark:fill-foreground [&_.recharts-legend-item-text]:dark:text-foreground"
+              className="[&_.recharts-text]:dark:fill-foreground [&_.recharts-legend-item-text]:dark:text-foreground"
             />
           </CardContent>
         </Card>
@@ -148,7 +148,7 @@ export function AdminBlog() {
               valueFormatter={(value) => `${value} posts`}
               height={250}
               emptyMessage="No author data available"
-              className="dark:text-foreground [&_.recharts-text]:dark:fill-foreground [&_.recharts-legend-item-text]:dark:text-foreground"
+              className="[&_.recharts-text]:dark:fill-foreground [&_.recharts-legend-item-text]:dark:text-foreground"
             />
           </CardContent>
         </Card>

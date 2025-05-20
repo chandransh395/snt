@@ -11,6 +11,7 @@ interface PieChartProps {
   valueFormatter?: (value: number) => string;
   height?: number | string;
   emptyMessage?: string;
+  className?: string; // Added className prop
 }
 
 export function PieChart({
@@ -21,6 +22,7 @@ export function PieChart({
   valueFormatter = (value: number) => value.toString(),
   height = "100%",
   emptyMessage = "No data available",
+  className, // Added className to destructuring
 }: PieChartProps) {
   // Check if we have valid data
   const hasValidData = data && data.length > 0 && data.some(item => item[category]);
@@ -49,7 +51,7 @@ export function PieChart({
   }
 
   return (
-    <ChartContainer config={config}>
+    <ChartContainer config={config} className={className}>
       <RechartsPieChart margin={{ top: 10, right: 30, left: 30, bottom: 10 }}>
         <Pie
           data={data}
