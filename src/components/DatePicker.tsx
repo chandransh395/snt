@@ -20,6 +20,7 @@ interface DatePickerProps {
   placeholder?: string;
   disabled?: boolean;
   minDate?: Date;
+  maxDate?: Date; // Add maxDate prop
   className?: string;
   showIcon?: boolean;
   icon?: React.ReactNode;
@@ -34,6 +35,7 @@ export function DatePicker({
   placeholder = "Select a date",
   disabled = false,
   minDate,
+  maxDate, // Include maxDate in the destructuring
   className,
   showIcon = false,
   icon,
@@ -43,6 +45,11 @@ export function DatePicker({
     if (onChange) onChange(date);
     if (onSelect) onSelect(date);
   };
+
+  // Create a disabled dates object based on minDate and maxDate
+  const disabledDates: { before?: Date; after?: Date } = {};
+  if (minDate) disabledDates.before = minDate;
+  if (maxDate) disabledDates.after = maxDate;
 
   return (
     <Popover>
@@ -67,7 +74,7 @@ export function DatePicker({
           mode="single"
           selected={selected}
           onSelect={handleDateSelect}
-          disabled={minDate ? { before: minDate } : undefined}
+          disabled={Object.keys(disabledDates).length > 0 ? disabledDates : undefined}
           initialFocus
           className={cn("p-3 pointer-events-auto")}
         />
