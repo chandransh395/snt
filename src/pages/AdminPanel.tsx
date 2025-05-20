@@ -1,9 +1,8 @@
-
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'; 
-import { ChartBar, Settings, BookMarked, MapPin, Edit } from 'lucide-react';
+import { ChartBar, Users, BookMarked, MapPin, Settings } from 'lucide-react';
 import StatsOverview from '@/components/admin/StatsOverview';
 import UserManagement from '@/components/admin/UserManagement';
 import { Link } from 'react-router-dom';

@@ -15,7 +15,7 @@ export async function setupSuperAdmin() {
       return;
     }
     
-    const users = userData.users;
+    const users = userData.users || [];
     const superAdminEmail = 'chandranshbinjola@gmail.com';
     const superAdminUser = users.find((user: any) => user.email === superAdminEmail);
     
