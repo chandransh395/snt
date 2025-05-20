@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Link, Outlet, useLocation } from 'react-router-dom';
-import { ChartBar, Users, Settings, BookMarked, Edit, MapPin } from 'lucide-react';
+import { ChartBar, Users, Settings, BookMarked, Edit, MapPin, Home } from 'lucide-react';
 
 const AdminLayout = () => {
   const location = useLocation();
@@ -17,9 +17,17 @@ const AdminLayout = () => {
   
   return (
     <div className="container mx-auto py-8 px-4">
-      <header className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">Admin Dashboard</h1>
-        <p className="text-muted-foreground">Manage your website content and settings</p>
+      <header className="mb-8 flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold mb-2">Admin Dashboard</h1>
+          <p className="text-muted-foreground">Manage your website content and settings</p>
+        </div>
+        <Link to="/">
+          <Button variant="outline" className="flex items-center gap-2">
+            <Home className="h-4 w-4" />
+            <span>Return to Website</span>
+          </Button>
+        </Link>
       </header>
       
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">

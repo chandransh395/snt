@@ -36,6 +36,7 @@ export async function setupSuperAdmin() {
       console.error('Error checking super admin role:', roleError);
     }
     
+    // Update the is_super_admin field in the user_roles table
     if (roleData) {
       // Update the existing role to super admin
       const { error: updateError } = await supabase

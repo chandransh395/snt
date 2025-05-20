@@ -11,7 +11,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Icons } from '@/components/ui/icons';
-import { Shield, ShieldCheck, User, AlertCircle, Loader2 } from 'lucide-react';
+import { Shield, ShieldCheck, ShieldAlert, User, AlertCircle, Loader2, UserPlus } from 'lucide-react';
 
 type UserWithRole = {
   id: string;
@@ -38,6 +38,7 @@ const UserManagement = () => {
   const [searchEmail, setSearchEmail] = useState('');
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const [openTransferDialog, setOpenTransferDialog] = useState(false);
+  const [openMakeSuperAdminDialog, setOpenMakeSuperAdminDialog] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [transferConfirm, setTransferConfirm] = useState('');
   const [fetchError, setFetchError] = useState<string | null>(null);
@@ -165,6 +166,58 @@ const UserManagement = () => {
       });
     } finally {
       setUpdatingUser(null);
+    }
+  };
+
+  // Toggle super admin status (for existing admins)
+  const toggleSuperAdminRole = async (userId: string, isCurrentlySuperAdmin: boolean) => {
+    try {
+      setUpdatingUser(userId);
+      
+      if (!isSuperAdmin) {
+        toast({
+          title: 'Permission Denied',
+          description: 'Only super admins can modify super admin accounts.',
+          variant: 'destructive',
+        });
+        return;
+      }
+      
+      const { error } = await supabase
+        .from('user_roles')
+        .update({ 
+          is_super_admin: !isCurrentlySuperAdmin,
+          // If making super admin, ensure they are also admin
+          is_admin: !isCurrentlySuperAdmin ? true : undefined
+        })
+        .eq('user_id', userId);
+      
+      if (error) throw error;
+      
+      // Update local state
+      setUsers(users.map(u => 
+        u.id === userId ? { 
+          ...u, 
+          is_super_admin: !isCurrentlySuperAdmin,
+          is_admin: !isCurrentlySuperAdmin ? true : u.is_admin
+        } : u
+      ));
+      
+      toast({
+        title: 'Super Admin Role Updated',
+        description: `User is now ${!isCurrentlySuperAdmin ? 'a super admin' : 'a regular admin'}.`,
+      });
+      
+    } catch (error: any) {
+      console.error('Error updating super admin role:', error);
+      toast({
+        title: 'Update Failed',
+        description: 'Failed to update super admin role: ' + (error.message || 'Unknown error'),
+        variant: 'destructive',
+      });
+    } finally {
+      setUpdatingUser(null);
+      setOpenMakeSuperAdminDialog(false);
     }
   };
   
@@ -390,49 +443,91 @@ const UserManagement = () => {
                           {user.last_sign_in_at ? new Date(user.last_sign_in_at).toLocaleDateString() : 'Never'}
                         </TableCell>
                         <TableCell className="text-right">
-                          {user.is_super_admin ? (
-                            <Button variant="ghost" disabled className="h-8 w-8 p-0">
-                              <ShieldCheck className="h-4 w-4" />
-                            </Button>
-                          ) : (
-                            <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-8 w-8"
-                                  disabled={updatingUser === user.id || (!isSuperAdmin && user.is_admin) || user.id === user?.id}
-                                >
-                                  {updatingUser === user.id ? (
-                                    <Loader2 className="h-4 w-4 animate-spin" />
-                                  ) : user.is_admin ? (
-                                    <Shield className="h-4 w-4 text-amber-500" />
-                                  ) : (
-                                    <User className="h-4 w-4" />
-                                  )}
-                                </Button>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent>
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle>
-                                    {user.is_admin ? 'Remove Admin Rights?' : 'Make User an Admin?'}
-                                  </AlertDialogTitle>
-                                  <AlertDialogDescription>
-                                    {user.is_admin 
-                                      ? 'This will remove admin privileges from this user.'
-                                      : 'This will grant admin privileges to this user, allowing them to access the admin panel and manage content.'
-                                    }
-                                  </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                  <AlertDialogAction onClick={() => toggleAdminRole(user.id, user.is_admin)}>
-                                    {user.is_admin ? 'Remove Admin' : 'Make Admin'}
-                                  </AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
-                          )}
+                          <div className="flex justify-end gap-1">
+                            {/* Super Admin Management (only for super admins) */}
+                            {isSuperAdmin && user.id !== user?.id && (
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8"
+                                    disabled={updatingUser === user.id}
+                                    title={user.is_super_admin ? "Remove Super Admin Status" : "Make Super Admin"}
+                                  >
+                                    {updatingUser === user.id ? (
+                                      <Loader2 className="h-4 w-4 animate-spin" />
+                                    ) : user.is_super_admin ? (
+                                      <ShieldAlert className="h-4 w-4 text-purple-500" />
+                                    ) : (
+                                      <ShieldCheck className="h-4 w-4 text-gray-400" />
+                                    )}
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>
+                                      {user.is_super_admin ? 'Remove Super Admin Status?' : 'Make User a Super Admin?'}
+                                    </AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      {user.is_super_admin 
+                                        ? 'This will remove super admin privileges from this user.'
+                                        : 'This will grant super admin privileges to this user, allowing them to manage all aspects of the site, including other admins.'
+                                      }
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction onClick={() => toggleSuperAdminRole(user.id, user.is_super_admin)}>
+                                      {user.is_super_admin ? 'Remove Super Admin' : 'Make Super Admin'}
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            )}
+                            
+                            {/* Regular Admin Toggle */}
+                            {(user.id !== user?.id || !user.is_super_admin) && (
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8"
+                                    disabled={updatingUser === user.id || (!isSuperAdmin && user.is_admin) || (user.is_super_admin && !isSuperAdmin)}
+                                    title={user.is_admin ? "Remove Admin Rights" : "Make Admin"}
+                                  >
+                                    {updatingUser === user.id ? (
+                                      <Loader2 className="h-4 w-4 animate-spin" />
+                                    ) : user.is_admin ? (
+                                      <Shield className="h-4 w-4 text-amber-500" />
+                                    ) : (
+                                      <User className="h-4 w-4" />
+                                    )}
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>
+                                      {user.is_admin ? 'Remove Admin Rights?' : 'Make User an Admin?'}
+                                    </AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      {user.is_admin 
+                                        ? 'This will remove admin privileges from this user.'
+                                        : 'This will grant admin privileges to this user, allowing them to access the admin panel and manage content.'
+                                      }
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction onClick={() => toggleAdminRole(user.id, user.is_admin)}>
+                                      {user.is_admin ? 'Remove Admin' : 'Make Admin'}
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            )}
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))
@@ -453,7 +548,7 @@ const UserManagement = () => {
             <p>
               {isSuperAdmin 
                 ? 'You are a super admin and can manage all users' 
-                : 'Only super admins can modify other admin accounts'}
+                : 'Only super admins can modify admin accounts'}
             </p>
           </div>
         </CardFooter>

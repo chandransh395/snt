@@ -91,6 +91,10 @@ export function AdminBlog() {
     }
   };
 
+  // More vibrant colors for the charts
+  const categoryColors = ["indigo", "violet", "fuchsia", "pink", "rose", "orange", "amber", "yellow", "lime", "emerald"];
+  const authorColors = ["cyan", "sky", "blue", "violet", "purple", "fuchsia", "pink", "rose", "amber", "orange"];
+
   return (
     <div className="container mx-auto py-6">
       <header className="mb-8">
@@ -109,7 +113,7 @@ export function AdminBlog() {
               data={categoryData}
               category="value"
               index="name"
-              colors={["amber", "blue", "green", "purple", "rose"]}
+              colors={categoryColors}
               valueFormatter={(value) => `${value} posts`}
               height={250}
               emptyMessage="No category data available"
@@ -127,7 +131,7 @@ export function AdminBlog() {
               data={authorData}
               category="value"
               index="name"
-              colors={["indigo", "cyan", "emerald", "amber", "rose"]}
+              colors={authorColors}
               valueFormatter={(value) => `${value} posts`}
               height={250}
               emptyMessage="No author data available"
