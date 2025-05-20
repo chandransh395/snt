@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
@@ -52,6 +51,7 @@ const BookingPage = () => {
       travelerPhone: '',
       numTravelers: 1,
       specialRequests: '',
+      travelDate: undefined,
     },
   });
   
@@ -120,6 +120,9 @@ const BookingPage = () => {
       // Calculate final price
       const priceValue = pricePerPerson * data.numTravelers * duration;
       
+      // Format date as ISO string for database storage
+      const formattedDate = data.travelDate.toISOString();
+      
       const bookingData = {
         destination_id: destination.id,
         destination_name: destination.name,
@@ -127,12 +130,14 @@ const BookingPage = () => {
         traveler_name: data.travelerName,
         traveler_email: data.travelerEmail,
         traveler_phone: data.travelerPhone,
-        travel_date: data.travelDate.toISOString().split('T')[0],
+        travel_date: formattedDate,
         num_travelers: data.numTravelers,
         special_requests: data.specialRequests,
         price: priceValue,
         status: 'pending',
-        duration_days: duration
+        duration_days: duration,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
       };
       
       const { error } = await supabase
@@ -312,7 +317,11 @@ const BookingPage = () => {
                 <div className="flex flex-col">
                   <DatePicker
                     selected={form.getValues('travelDate')}
-                    onChange={(date) => form.setValue('travelDate', date as Date)}
+                    onChange={(date) => {
+                      if (date) {
+                        form.setValue('travelDate', date, { shouldValidate: true });
+                      }
+                    }}
                     minDate={new Date()}
                     className="w-full"
                     showIcon

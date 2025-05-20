@@ -91,6 +91,7 @@ export interface Database {
           created_at: string;
           updated_at: string;
           price: number;
+          duration_days?: number;
         };
         Insert: {
           id?: string;
@@ -107,6 +108,7 @@ export interface Database {
           created_at?: string;
           updated_at?: string;
           price: number;
+          duration_days?: number;
         };
         Update: {
           id?: string;
@@ -123,6 +125,7 @@ export interface Database {
           created_at?: string;
           updated_at?: string;
           price?: number;
+          duration_days?: number;
         };
       };
       blog_posts: {
@@ -130,34 +133,40 @@ export interface Database {
           id: number;
           title: string;
           content: string;
-          excerpt: string;
+          excerpt: string | null;
           author: string;
           image: string;
-          published_at: string;
-          category: string;
-          tags: string[];
+          published_at: string | null;
+          category: string | null;
+          tags: string[] | null;
+          views: number | null;
+          status: 'published' | 'draft' | null;
         };
         Insert: {
           id?: number;
           title: string;
           content: string;
-          excerpt?: string;
+          excerpt?: string | null;
           author: string;
           image: string;
-          published_at?: string;
-          category?: string;
-          tags?: string[];
+          published_at?: string | null;
+          category?: string | null;
+          tags?: string[] | null;
+          views?: number | null;
+          status?: 'published' | 'draft' | null;
         };
         Update: {
           id?: number;
           title?: string;
           content?: string;
-          excerpt?: string;
+          excerpt?: string | null;
           author?: string;
           image?: string;
-          published_at?: string;
-          category?: string;
-          tags?: string[];
+          published_at?: string | null;
+          category?: string | null;
+          tags?: string[] | null;
+          views?: number | null;
+          status?: 'published' | 'draft' | null;
         };
       };
     };
