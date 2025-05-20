@@ -71,8 +71,8 @@ const AdminBlog = () => {
         query = query.ilike('title', `%${searchQuery}%`);
       }
       
-      // Order by published_date or created_at, most recent first
-      query = query.order('published_date', { ascending: false, nullsFirst: false });
+      // Order by published_at instead of published_date
+      query = query.order('published_at', { ascending: false, nullsFirst: false });
       
       const { data, error } = await query;
       
@@ -276,8 +276,8 @@ const AdminBlog = () => {
                     {post.title}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
-                    {post.published_date 
-                      ? new Date(post.published_date).toLocaleDateString() 
+                    {post.published_at 
+                      ? new Date(post.published_at).toLocaleDateString() 
                       : 'Not published'}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm">
