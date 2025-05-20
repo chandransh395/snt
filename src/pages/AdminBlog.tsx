@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from "@/components/ui/button";
@@ -123,7 +123,10 @@ const AdminBlog = () => {
     try {
       const { error } = await supabase
         .from('blog_posts')
-        .update({ published: !post.published })
+        .update({ 
+          published: !post.published,
+          published_at: !post.published ? new Date().toISOString() : null
+        })
         .eq('id', post.id);
         
       if (error) throw error;
