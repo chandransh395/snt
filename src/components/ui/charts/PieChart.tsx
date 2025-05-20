@@ -21,7 +21,12 @@ export function PieChart({
   const config = Object.fromEntries(
     data.map((item, i) => [
       item[index],
-      { theme: { light: `hsl(var(--${colors[i % colors.length]}))` } },
+      { 
+        theme: { 
+          light: `hsl(var(--${colors[i % colors.length]}))`,
+          dark: `hsl(var(--${colors[i % colors.length]}))` 
+        } 
+      },
     ])
   );
 

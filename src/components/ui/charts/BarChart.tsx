@@ -23,7 +23,12 @@ export function BarChart({
   const config = Object.fromEntries(
     categories.map((category, i) => [
       category,
-      { theme: { light: `hsl(var(--${colors[i % colors.length]}))` } },
+      { 
+        theme: { 
+          light: `hsl(var(--${colors[i % colors.length]}))`,
+          dark: `hsl(var(--${colors[i % colors.length]}))` 
+        } 
+      },
     ])
   );
 
