@@ -1,5 +1,5 @@
 
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Outlet } from 'react-router-dom';
 import './App.css';
 import Layout from './components/Layout';
 import Home from './pages/Home';
@@ -32,7 +32,7 @@ function App() {
         <SecurityHeaders />
         <ErrorBoundary>
           <Routes>
-            <Route path="/" element={<Layout>{/* Layout expects children prop */}</Layout>}>
+            <Route path="/" element={<Layout><Outlet /></Layout>}>
               <Route index element={<Home />} />
               <Route path="about" element={<About />} />
               <Route path="contact" element={<Contact />} />
