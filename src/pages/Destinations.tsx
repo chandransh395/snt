@@ -1,15 +1,12 @@
 
 import { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Select, SelectValue, SelectTrigger, SelectContent, SelectItem } from "@/components/ui/select";
 import { useToast } from "@/components/ui/use-toast";
-import { MapPin, Search, Loader2, BadgeCheck, Trophy, Shield } from 'lucide-react';
+import { MapPin, Search, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { formatPrice } from '@/utils/currency';
 import LookingForElseCard from '@/components/LookingForElseCard';
 import DestinationCard from '@/components/DestinationCard';
 import { motion } from 'framer-motion';
@@ -117,13 +114,6 @@ const Destinations = () => {
     setSelectedRegion(region);
   };
 
-  // Trust features to display
-  const trustFeatures = [
-    { icon: <Trophy className="h-5 w-5 text-amber-500" />, text: "Award-Winning Tours" },
-    { icon: <BadgeCheck className="h-5 w-5 text-green-500" />, text: "Verified Activities" },
-    { icon: <Shield className="h-5 w-5 text-blue-500" />, text: "Safe Travel Guarantee" },
-  ];
-
   return (
     <div className="container mx-auto py-12 px-4">
       <motion.header 
@@ -134,22 +124,6 @@ const Destinations = () => {
       >
         <h1 className="text-4xl font-bold mb-3 text-center font-playfair">Explore Destinations</h1>
         <p className="text-muted-foreground max-w-2xl mx-auto text-center mb-5">Discover your perfect adventure from our handpicked collection of breathtaking destinations</p>
-        
-        {/* Trust features */}
-        <div className="flex flex-wrap justify-center gap-3 mb-6">
-          {trustFeatures.map((feature, index) => (
-            <motion.div
-              key={index}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 + (index * 0.1) }}
-              className="verification-badge"
-            >
-              {feature.icon}
-              <span>{feature.text}</span>
-            </motion.div>
-          ))}
-        </div>
       </motion.header>
 
       <div className="bg-gray-50 dark:bg-gray-800/30 rounded-xl p-6 mb-10 shadow-sm">

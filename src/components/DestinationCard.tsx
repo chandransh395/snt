@@ -37,7 +37,7 @@ const DestinationCard = ({ destination, index }: DestinationCardProps) => {
       transition={{ duration: 0.3, delay: index * 0.1 }}
       className="h-full"
     >
-      <Card className="overflow-hidden h-full flex flex-col card-highlight">
+      <Card className="overflow-hidden h-full flex flex-col shadow-md hover:shadow-lg transition-all duration-300 border-gray-200 dark:border-gray-800">
         <div className="relative h-52 overflow-hidden group">
           <img 
             src={destination.image} 
@@ -67,11 +67,10 @@ const DestinationCard = ({ destination, index }: DestinationCardProps) => {
                 {destination.name}
               </h3>
               
-              {/* Rating and bookings indicator */}
+              {/* Rating indicator for top booked only */}
               {destination.top_booked && (
                 <div className="flex items-center text-sm text-amber-500">
                   <Star className="fill-amber-500 h-4 w-4" />
-                  <span className="ml-1 font-medium">Top Booked</span>
                 </div>
               )}
             </div>
@@ -79,7 +78,7 @@ const DestinationCard = ({ destination, index }: DestinationCardProps) => {
             {/* Tags */}
             {destination.tags && destination.tags.length > 0 && (
               <div className="flex flex-wrap gap-1 mb-3">
-                {destination.tags.map((tag, i) => (
+                {destination.tags.slice(0, 3).map((tag, i) => (
                   <Badge key={i} variant="outline" className="text-xs px-2 py-0 border-travel-gold/30 text-travel-gold">
                     {tag}
                   </Badge>

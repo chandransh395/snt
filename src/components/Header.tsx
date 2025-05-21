@@ -4,7 +4,7 @@ import { Link, useLocation } from "react-router-dom";
 import { ThemeToggle } from "./ThemeToggle";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
-import { LogOut, ShieldCheck, BadgeCheck } from "lucide-react";
+import { LogOut, ShieldCheck } from "lucide-react";
 import MobileNav from "./MobileNav";
 import { motion } from "framer-motion";
 
@@ -49,12 +49,6 @@ const Header = () => {
             <h1 className="text-2xl sm:text-3xl font-playfair font-bold tracking-wider">
               Seeta<span className="text-travel-gold">Narayan</span>
             </h1>
-            {isAdmin && (
-              <div className="ml-2 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 px-1.5 py-0.5 rounded text-xs flex items-center">
-                <BadgeCheck className="h-3 w-3 mr-0.5" />
-                Verified
-              </div>
-            )}
           </Link>
         </motion.div>
 

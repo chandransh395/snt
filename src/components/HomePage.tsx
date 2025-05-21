@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Loader2, MessageCircle, Phone, BadgeCheck, Award, Shield } from "lucide-react";
+import { Loader2, MessageCircle, Phone, Award } from "lucide-react";
 import { supabase } from '@/integrations/supabase/client';
 import DestinationCard from './DestinationCard';
 import { motion } from 'framer-motion';
@@ -64,21 +64,6 @@ const HomePage = () => {
     );
   }
 
-  const trustFeatures = [
-    { 
-      icon: <BadgeCheck className="h-5 w-5 text-green-500" />, 
-      text: "Verified Destinations" 
-    },
-    { 
-      icon: <Award className="h-5 w-5 text-blue-500" />, 
-      text: "Top Rated Services" 
-    },
-    { 
-      icon: <Shield className="h-5 w-5 text-amber-500" />, 
-      text: "Secure Payments" 
-    },
-  ];
-
   // Main JSX structure for the HomePage component
   return (
     <section className="py-16">
@@ -97,22 +82,6 @@ const HomePage = () => {
           <p className="text-muted-foreground mt-3 max-w-2xl mx-auto">
             Discover our most popular and highest rated travel experiences, handpicked for exceptional adventures.
           </p>
-          
-          {/* Trust indicators */}
-          <div className="flex flex-wrap justify-center gap-3 mt-4">
-            {trustFeatures.map((feature, index) => (
-              <motion.div
-                key={index}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3 + (index * 0.1) }}
-                className="verification-badge"
-              >
-                {feature.icon}
-                <span>{feature.text}</span>
-              </motion.div>
-            ))}
-          </div>
         </motion.div>
         
         {loading ? (
@@ -157,8 +126,8 @@ const HomePage = () => {
                   </div>
                   
                   <div className="mt-5">
-                    <span className="satisfaction-guarantee">
-                      <Award className="h-4 w-4" /> 100% Satisfaction Guarantee
+                    <span className="inline-flex items-center text-sm text-amber-600 dark:text-amber-400">
+                      <Award className="h-4 w-4 mr-1" /> Satisfaction Guaranteed
                     </span>
                   </div>
                 </CardContent>

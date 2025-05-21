@@ -13,7 +13,7 @@ const Layout = ({ children }: LayoutProps) => {
   return (
     <>
       <SecurityHeaders />
-      <div className="flex flex-col min-h-screen w-full max-w-full overflow-x-hidden">
+      <div className="flex flex-col min-h-screen w-full max-w-full overflow-x-hidden bg-background">
         <Header />
         <main className="flex-grow pt-16 w-full">
           <PageTransition>{children}</PageTransition>
