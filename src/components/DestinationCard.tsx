@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { MapPin, Calendar, Star, Users, ArrowRight } from 'lucide-react';
+import { MapPin, Calendar, ArrowUp, Users, ArrowRight } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 interface Destination {
@@ -43,6 +43,7 @@ const DestinationCard = ({ destination, index }: DestinationCardProps) => {
             src={destination.image} 
             alt={destination.name} 
             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" 
+            loading="lazy"
           />
           
           {/* Price badge */}
@@ -67,10 +68,10 @@ const DestinationCard = ({ destination, index }: DestinationCardProps) => {
                 {destination.name}
               </h3>
               
-              {/* Rating indicator for top booked only */}
+              {/* Rating indicator with Arrow Up instead of Star */}
               {destination.top_booked && (
                 <div className="flex items-center text-sm text-amber-500">
-                  <Star className="fill-amber-500 h-4 w-4" />
+                  <ArrowUp className="fill-amber-500 stroke-amber-500 h-4 w-4" />
                 </div>
               )}
             </div>

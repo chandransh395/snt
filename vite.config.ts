@@ -27,6 +27,8 @@ export default defineConfig(({ mode }) => ({
         manualChunks: {
           vendor: ['react', 'react-dom', 'react-router-dom'],
           ui: ['@radix-ui/react-toast', '@radix-ui/react-dialog'],
+          components: ['./src/components/ui/**/*.tsx'],
+          framer: ['framer-motion'],
         },
       }
     },
@@ -36,9 +38,17 @@ export default defineConfig(({ mode }) => ({
     cssCodeSplit: true,
     // Minify assets
     assetsInlineLimit: 4096,
+    // Add image compression
+    target: 'esnext',
+    // Reduce chunk size warnings threshold
+    chunkSizeWarningLimit: 1000,
   },
   preview: {
     port: 8080,
     host: true,
-  }
+  },
+  // Optimize deps for fast builds
+  optimizeDeps: {
+    include: ['react', 'react-dom', 'react-router-dom', 'framer-motion'],
+  },
 }));

@@ -58,14 +58,49 @@
       font-size: 4rem;
       margin-bottom: 1rem;
     }
+    .cached-content {
+      margin-top: 2rem;
+      padding-top: 1rem;
+      border-top: 1px solid #e5e7eb;
+      font-size: 0.875rem;
+    }
+    .cached-content a {
+      color: #DBA11C;
+      text-decoration: none;
+    }
+    .cached-content a:hover {
+      text-decoration: underline;
+    }
+    .cached-list {
+      list-style-type: none;
+      padding: 0;
+      margin: 1rem 0;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 0.75rem;
+    }
+    .cached-list li {
+      background-color: #f3f4f6;
+      padding: 0.5rem 1rem;
+      border-radius: 0.25rem;
+    }
   </style>
 </head>
 <body>
   <div class="container">
     <div class="icon">📶</div>
     <h1>You're <span class="highlight">Offline</span></h1>
-    <p>It seems you've lost your internet connection. Please check your connection and try again.</p>
+    <p>It seems you've lost your internet connection. Please check your connection and try again. Some parts of the site may still work from cache.</p>
     <a href="/" class="button">Try Again</a>
+    
+    <div class="cached-content">
+      <h2>Available Offline Content</h2>
+      <p>You can still access these previously viewed pages:</p>
+      <ul id="cachedPages" class="cached-list">
+        <li>Loading...</li>
+      </ul>
+    </div>
   </div>
   <script>
     // Listen for online status changes
@@ -79,6 +114,72 @@
         alert('You are still offline. Please check your internet connection.');
       }
     });
+    
+    // Check for available cached resources
+    if ('caches' in window) {
+      caches.open('seeta-narayan-cache-v2')
+        .then(cache => {
+          return cache.keys();
+        })
+        .then(requests => {
+          const cachedList = document.getElementById('cachedPages');
+          cachedList.innerHTML = '';
+          
+          const routes = new Set();
+          const baseUrl = window.location.origin;
+          
+          requests.forEach(request => {
+            if (request.url.includes(baseUrl) && 
+                !request.url.includes('.js') && 
+                !request.url.includes('.css') && 
+                !request.url.includes('.png') && 
+                !request.url.includes('.jpg') && 
+                !request.url.includes('.svg')) {
+              
+              const path = request.url.replace(baseUrl, '');
+              
+              if (path && path !== '/' && path !== '/offline.html') {
+                // Clean up path for display
+                let displayPath = path;
+                if (displayPath.endsWith('/')) {
+                  displayPath = displayPath.slice(0, -1);
+                }
+                
+                // Extract main routes only
+                const mainPath = '/' + displayPath.split('/')[1];
+                routes.add(mainPath);
+              }
+            }
+          });
+          
+          // Common routes to check/display even if not in cache
+          const commonRoutes = ['/destinations', '/about', '/blog'];
+          commonRoutes.forEach(route => routes.add(route));
+          
+          if (routes.size > 0) {
+            routes.forEach(route => {
+              const li = document.createElement('li');
+              const a = document.createElement('a');
+              a.href = route;
+              a.textContent = route.charAt(1).toUpperCase() + route.slice(2);
+              a.onclick = (e) => {
+                if (!navigator.onLine) {
+                  // Allow the navigation to try from cache
+                  console.log('Attempting to load cached page:', route);
+                }
+              };
+              li.appendChild(a);
+              cachedList.appendChild(li);
+            });
+          } else {
+            cachedList.innerHTML = '<li>No cached pages available</li>';
+          }
+        })
+        .catch(error => {
+          console.error('Error checking cache:', error);
+          document.getElementById('cachedPages').innerHTML = '<li>Error checking cache</li>';
+        });
+    }
   </script>
 </body>
 </html>

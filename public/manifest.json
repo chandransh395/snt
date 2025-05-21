@@ -27,9 +27,29 @@
   ],
   "start_url": "/",
   "display": "standalone",
-  "theme_color": "#EAB308",
+  "theme_color": "#DBA11C",
   "background_color": "#FFFFFF",
   "orientation": "portrait",
   "description": "Luxury Travel Agency providing personalized travel experiences",
-  "screenshots": []
+  "categories": ["travel", "lifestyle", "booking"],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "Destinations",
+      "url": "/destinations",
+      "description": "Browse destinations"
+    },
+    {
+      "name": "Blog",
+      "url": "/blog",
+      "description": "Read our travel blog"
+    },
+    {
+      "name": "Contact",
+      "url": "/contact",
+      "description": "Contact us"
+    }
+  ],
+  "related_applications": [],
+  "prefer_related_applications": false
 }

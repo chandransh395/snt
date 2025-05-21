@@ -37,6 +37,9 @@
     --ring: 222 47% 11%;
 
     --radius: 0.5rem;
+    
+    /* Custom color for travel-gold */
+    --travel-gold: 43 74% 49%;
   }
 
   .dark {
@@ -98,6 +101,21 @@
   /* Content visibility optimization */
   .cv-auto {
     content-visibility: auto;
+    contain-intrinsic-size: 1px 5000px; /* Provide size estimate */
+  }
+  
+  /* DNS prefetching for external resources */
+  head {
+    link[rel="preconnect"][href*="fonts.googleapis.com"],
+    link[rel="preconnect"][href*="fonts.gstatic.com"] {
+      display: block;
+    }
+  }
+  
+  /* Image optimization */
+  img {
+    @apply max-w-full h-auto;
+    content-visibility: auto;
   }
 }
 
@@ -128,7 +146,7 @@
     @apply transition-all duration-200 hover:shadow-md hover:shadow-primary/25;
   }
 
-  /* Interactive links with underline animation - updated to use travel-gold color */
+  /* Interactive links with underline animation - using travel-gold consistently */
   .animated-link {
     @apply relative inline-block after:content-[''] after:absolute after:w-full after:scale-x-0 after:h-0.5 after:bottom-0 after:left-0 after:bg-travel-gold after:origin-bottom-right after:transition-transform after:duration-300 hover:after:scale-x-100 hover:after:origin-bottom-left;
   }
@@ -139,6 +157,7 @@
   }
 }
 
+/* Optimized keyframes definitions */
 @keyframes fadeIn {
   from { opacity: 0; }
   to { opacity: 1; }
@@ -165,6 +184,7 @@
   }
 }
 
+/* Animation classes */
 .fadeIn {
   animation: fadeIn 0.3s ease forwards;
 }
@@ -177,25 +197,12 @@
   animation: scaleIn 0.3s ease forwards;
 }
 
-.delay-100 {
-  animation-delay: 100ms;
-}
-
-.delay-200 {
-  animation-delay: 200ms;
-}
-
-.delay-300 {
-  animation-delay: 300ms;
-}
-
-.delay-400 {
-  animation-delay: 400ms;
-}
-
-.delay-500 {
-  animation-delay: 500ms;
-}
+/* Animation delays */
+.delay-100 { animation-delay: 100ms; }
+.delay-200 { animation-delay: 200ms; }
+.delay-300 { animation-delay: 300ms; }
+.delay-400 { animation-delay: 400ms; }
+.delay-500 { animation-delay: 500ms; }
 
 /* Container width fix */
 .container {

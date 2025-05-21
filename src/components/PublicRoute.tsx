@@ -34,7 +34,8 @@ const PublicRoute = ({ children, redirectAuthenticatedTo = "/" }: PublicRoutePro
         try {
           const bookingData = JSON.parse(pendingBooking);
           setShowContent(<Navigate to={`/book/${bookingData.id}`} replace />);
-        } catch {
+        } catch (error) {
+          console.error('Error parsing pending booking data:', error);
           setShowContent(<Navigate to={redirectAuthenticatedTo} replace />);
         }
       } else {

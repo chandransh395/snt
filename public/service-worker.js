@@ -1,12 +1,16 @@
 
-const CACHE_NAME = 'seeta-narayan-cache-v1';
+const CACHE_NAME = 'seeta-narayan-cache-v2';
 const urlsToCache = [
   '/',
   '/index.html',
+  '/offline.html',
   '/favicon.ico',
   '/logo192.png',
   '/logo512.png',
-  '/manifest.json'
+  '/manifest.json',
+  '/destinations',
+  '/about',
+  '/blog'
 ];
 
 // Error handling helper
@@ -18,77 +22,15 @@ self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then((cache) => {
+        console.log('Opened cache');
         return cache.addAll(urlsToCache);
       })
       .catch(error => handleError(error, 'installation'))
   );
+  // Force the waiting service worker to become the active service worker
+  self.skipWaiting();
 });
 
-self.addEventListener('fetch', (event) => {
-  event.respondWith(
-    caches.match(event.request)
-      .then((response) => {
-        // Cache hit - return response
-        if (response) {
-          return response;
-        }
-        
-        // Safety check for null/undefined request
-        if (!event.request || !event.request.url) {
-          return fetch(event.request);
-        }
-
-        // Clone the request because it's a one-time use stream
-        const fetchRequest = event.request.clone();
-        
-        return fetch(fetchRequest).then(
-          (response) => {
-            // Check if we received a valid response
-            if(!response || response.status !== 200 || response.type !== 'basic') {
-              return response;
-            }
-
-            // Safety check for null/undefined response
-            if (!response || !response.url) {
-              return response;
-            }
-
-            // Clone the response
-            const responseToCache = response.clone();
-
-            // Don't cache API requests, admin routes, or if response is invalid
-            if (!event.request.url.includes('/api/') && 
-                !event.request.url.includes('/admin') && 
-                response && 
-                response.status === 200) {
-              caches.open(CACHE_NAME)
-                .then((cache) => {
-                  cache.put(event.request, responseToCache);
-                })
-                .catch(error => handleError(error, 'caching'));
-            }
-
-            return response;
-          }
-        ).catch(error => {
-          handleError(error, 'fetch');
-          // Try to return something from cache on network failure
-          return caches.match('/offline.html') || new Response('Network error occurred', {
-            status: 503,
-            headers: new Headers({
-              'Content-Type': 'text/plain'
-            })
-          });
-        });
-      })
-      .catch(error => {
-        handleError(error, 'cache match');
-        return fetch(event.request);
-      })
-  );
-});
-
-// Clean up old caches when a new service worker is activated
 self.addEventListener('activate', (event) => {
   const cacheWhitelist = [CACHE_NAME];
   event.waitUntil(
@@ -96,12 +38,143 @@ self.addEventListener('activate', (event) => {
       return Promise.all(
         cacheNames.map((cacheName) => {
           if (cacheWhitelist.indexOf(cacheName) === -1) {
+            console.log('Deleting old cache:', cacheName);
             return caches.delete(cacheName);
           }
           return null;
         }).filter(Boolean)
       );
+    }).then(() => {
+      // Take control of all clients as soon as the service worker activates
+      return self.clients.claim();
     }).catch(error => handleError(error, 'activation'))
+  );
+});
+
+// Improved fetch event handler with network-first strategy for API routes and cache-first for assets
+self.addEventListener('fetch', (event) => {
+  const request = event.request;
+  const url = new URL(request.url);
+  
+  // Skip cross-origin requests
+  if (url.origin !== self.location.origin) {
+    return;
+  }
+
+  // Network first strategy for API routes and dynamic content
+  if (request.url.includes('/api/') || 
+      request.url.includes('/auth') || 
+      request.url.includes('supabase')) {
+    event.respondWith(
+      fetch(request)
+        .then(response => {
+          return response;
+        })
+        .catch(() => {
+          return caches.match('/offline.html');
+        })
+    );
+    return;
+  }
+  
+  // Cache first for HTML navigation routes (destinations, about, blog)
+  if (request.mode === 'navigate' || 
+     (request.method === 'GET' && 
+      request.headers.get('accept') && 
+      request.headers.get('accept').includes('text/html'))) {
+    
+    // Try cache first for these specific routes
+    const isSpecificRoute = ['/destinations', '/about', '/blog'].some(route => 
+      url.pathname === route || url.pathname.startsWith(`${route}/`)
+    );
+    
+    if (isSpecificRoute) {
+      event.respondWith(
+        caches.match(request)
+          .then(response => {
+            return response || fetch(request)
+              .then(fetchResponse => {
+                // Clone the response to store in cache
+                const responseToCache = fetchResponse.clone();
+                caches.open(CACHE_NAME)
+                  .then(cache => {
+                    cache.put(request, responseToCache);
+                  });
+                return fetchResponse;
+              })
+              .catch(() => {
+                // If both cache and network fail, show offline page
+                return caches.match('/offline.html');
+              });
+          })
+      );
+      return;
+    }
+    
+    // For other navigation routes, try network first then cache
+    event.respondWith(
+      fetch(request)
+        .then(response => {
+          // Cache successful responses
+          const responseToCache = response.clone();
+          caches.open(CACHE_NAME)
+            .then(cache => {
+              cache.put(request, responseToCache);
+            });
+          return response;
+        })
+        .catch(() => {
+          return caches.match(request)
+            .then(cachedResponse => {
+              if (cachedResponse) {
+                return cachedResponse;
+              }
+              return caches.match('/offline.html');
+            });
+        })
+    );
+    return;
+  }
+  
+  // Cache-first strategy for static assets (images, CSS, JS)
+  if (request.url.match(/\.(js|css|png|jpg|jpeg|gif|svg|woff|woff2|ttf|eot)$/)) {
+    event.respondWith(
+      caches.match(request)
+        .then(response => {
+          return response || fetch(request)
+            .then(fetchResponse => {
+              const responseToCache = fetchResponse.clone();
+              caches.open(CACHE_NAME)
+                .then(cache => {
+                  cache.put(request, responseToCache);
+                });
+              return fetchResponse;
+            });
+        })
+    );
+    return;
+  }
+  
+  // Default strategy
+  event.respondWith(
+    caches.match(request)
+      .then(response => {
+        return response || fetch(request)
+          .catch(() => {
+            // If it's a navigation request, return the offline page
+            if (request.mode === 'navigate') {
+              return caches.match('/offline.html');
+            }
+            // For images, you could return a default offline image
+            if (request.url.match(/\.(jpg|png|gif|svg)$/)) {
+              return caches.match('/placeholder.svg');
+            }
+            return new Response('Network error occurred', {
+              status: 503,
+              headers: new Headers({ 'Content-Type': 'text/plain' })
+            });
+          });
+      })
   );
 });
 
@@ -129,7 +202,9 @@ self.addEventListener('push', function(event) {
       badge: '/favicon.ico',
       data: {
         url: notificationData.url || '/'
-      }
+      },
+      vibrate: [100, 50, 100],
+      timestamp: Date.now()
     };
 
     event.waitUntil(
@@ -145,21 +220,21 @@ self.addEventListener('notificationclick', function(event) {
   
   if (event.notification.data && event.notification.data.url) {
     event.waitUntil(
-      clients.openWindow(event.notification.data.url)
+      clients.matchAll({type: 'window'})
+        .then(function(clientList) {
+          // Check if there is already a window/tab open with the target URL
+          for (var i = 0; i < clientList.length; i++) {
+            var client = clientList[i];
+            if (client.url === event.notification.data.url && 'focus' in client) {
+              return client.focus();
+            }
+          }
+          // If no window/tab is already open, open a new one
+          if (clients.openWindow) {
+            return clients.openWindow(event.notification.data.url);
+          }
+        })
         .catch(error => handleError(error, 'notification click'))
-    );
-  }
-});
-
-// Add an offline fallback page
-self.addEventListener('fetch', function(event) {
-  if (event.request.mode === 'navigate' || 
-      (event.request.method === 'GET' && 
-       event.request.headers.get('accept').includes('text/html'))) {
-    event.respondWith(
-      fetch(event.request).catch(function() {
-        return caches.match('/offline.html');
-      })
     );
   }
 });
