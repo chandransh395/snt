@@ -71,7 +71,7 @@ const Footer = () => {
             </div>
           </div>
           
-          <div>
+      I want o    <div>
             <h4 className="text-lg font-semibold mb-6">Quick Links</h4>
             <ul className="space-y-3">
               <li><Link to="/" className="text-gray-300 hover:text-travel-gold transition-colors">Home</Link></li>

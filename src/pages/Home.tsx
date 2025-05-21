@@ -55,8 +55,8 @@ const Home = () => {
         </div>
 
         {/* Hero Content */}
-        <div className="relative z-10 text-center px-4 md:px-8 max-w-5xl mx-auto">
-          <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-white mb-8 animate-fade-in drop-shadow-lg font-playfair">
+        <div className="relative z-10 text-center px-4 md:px-8">
+          <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-white mb-8 drop-shadow-lg font-playfair">
             Discover the World's Most Breathtaking Destinations
           </h1>
 
@@ -64,11 +64,11 @@ const Home = () => {
             Your journey begins with us. Experience unforgettable adventures and create memories that last a lifetime.
           </p>
 
-          <div className="space-x-6 animate-fade-in delay-200">
-            <Button asChild className="bg-travel-gold hover:bg-amber-600 text-black dark:text-white px-10 py-7 text-lg">
+          <div className="space-x-6 delay-200">
+            <Button className="bg-travel-gold hover:bg-amber-600 text-black dark:text-white px-10 py-7 text-lg">
               <Link to="/destinations">Explore Destinations</Link>
             </Button>
-            <Button asChild variant="outline" className="border-white bg-transparent text-white hover:bg-white/10 dark:border-white px-10 py-7 text-lg">
+            <Button variant="outline" className="border-white bg-transparent text-white hover:bg-white/10 dark:border-white px-10 py-7 text-lg">
               <Link to="/contact">Contact Us</Link>
             </Button>
           </div>
@@ -181,7 +181,7 @@ const Home = () => {
         <div className="container mx-auto px-4 text-center">
           <h2 className="text-3xl font-bold mb-6">Ready to Start Your Adventure?</h2>
           <p className="mb-8 max-w-2xl mx-auto">Join thousands of satisfied travelers who have explored the world with us. Your perfect journey is just a click away.</p>
-          <Button asChild size="lg" className="bg-travel-gold hover:bg-amber-600 text-black dark:text-white px-8">
+          <Button size="lg" className="bg-travel-gold hover:bg-amber-600 text-black dark:text-white px-8">
             <Link to="/destinations">Book Your Trip Now</Link>
           </Button>
         </div>
