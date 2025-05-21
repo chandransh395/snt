@@ -14,6 +14,7 @@ import BlogPost from './pages/BlogPost';
 import NotFound from './pages/NotFound';
 import Auth from './pages/Auth';
 import ProtectedRoute from './components/ProtectedRoute';
+import PublicRoute from './components/PublicRoute';
 import SecurityHeaders from './components/SecurityHeaders';
 import { ThemeProvider } from './components/ThemeProvider';
 import { Toaster } from './components/ui/toaster';
@@ -41,11 +42,15 @@ function App() {
                 <Route path="destinations" element={<Destinations />} />
                 <Route path="destinations/:id" element={<DestinationDetail />} />
                 <Route path="book/:id" element={<BookingPage />} />
-                <Route path="booking/:id" element={<BookingPage />} /> {/* Added this route to handle /booking/:id */}
+                <Route path="booking/:id" element={<BookingPage />} />
                 <Route path="booking-success" element={<BookingSuccess />} />
                 <Route path="blog" element={<Blog />} />
                 <Route path="blog/:id" element={<BlogPost />} />
-                <Route path="auth" element={<Auth />} />
+                <Route path="auth" element={
+                  <PublicRoute redirectAuthenticatedTo="/">
+                    <Auth />
+                  </PublicRoute>
+                } />
                 <Route path="*" element={<NotFound />} />
               </Route>
               
@@ -56,11 +61,11 @@ function App() {
               }>
                 <Route index element={<AdminPanel />} />
                 <Route path="blog" element={<AdminBlog />} />
-                <Route path="blog/new" element={<AdminBlog />} /> {/* Added new route for blog creation */}
+                <Route path="blog/new" element={<AdminBlog />} />
                 <Route path="destinations" element={<AdminDestinations />} />
                 <Route path="settings" element={<AdminSettings />} />
                 <Route path="bookings" element={<AdminBookings />} />
-                <Route path="users" element={<AdminPanel />} /> {/* Temporarily redirect to admin panel */}
+                <Route path="users" element={<AdminPanel />} />
               </Route>
             </Routes>
           </ErrorBoundary>

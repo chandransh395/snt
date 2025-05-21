@@ -9,12 +9,18 @@ const urlsToCache = [
   '/manifest.json'
 ];
 
+// Error handling helper
+const handleError = (error, action) => {
+  console.error(`Service worker ${action} error:`, error);
+};
+
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then((cache) => {
         return cache.addAll(urlsToCache);
       })
+      .catch(error => handleError(error, 'installation'))
   );
 });
 
@@ -26,28 +32,58 @@ self.addEventListener('fetch', (event) => {
         if (response) {
           return response;
         }
-        return fetch(event.request).then(
+        
+        // Safety check for null/undefined request
+        if (!event.request || !event.request.url) {
+          return fetch(event.request);
+        }
+
+        // Clone the request because it's a one-time use stream
+        const fetchRequest = event.request.clone();
+        
+        return fetch(fetchRequest).then(
           (response) => {
             // Check if we received a valid response
             if(!response || response.status !== 200 || response.type !== 'basic') {
               return response;
             }
 
+            // Safety check for null/undefined response
+            if (!response || !response.url) {
+              return response;
+            }
+
             // Clone the response
             const responseToCache = response.clone();
 
-            caches.open(CACHE_NAME)
-              .then((cache) => {
-                // Don't cache API requests or admin routes
-                if (!event.request.url.includes('/api/') && 
-                    !event.request.url.includes('/admin')) {
+            // Don't cache API requests, admin routes, or if response is invalid
+            if (!event.request.url.includes('/api/') && 
+                !event.request.url.includes('/admin') && 
+                response && 
+                response.status === 200) {
+              caches.open(CACHE_NAME)
+                .then((cache) => {
                   cache.put(event.request, responseToCache);
-                }
-              });
+                })
+                .catch(error => handleError(error, 'caching'));
+            }
 
             return response;
           }
-        );
+        ).catch(error => {
+          handleError(error, 'fetch');
+          // Try to return something from cache on network failure
+          return caches.match('/offline.html') || new Response('Network error occurred', {
+            status: 503,
+            headers: new Headers({
+              'Content-Type': 'text/plain'
+            })
+          });
+        });
+      })
+      .catch(error => {
+        handleError(error, 'cache match');
+        return fetch(event.request);
       })
   );
 });
@@ -62,27 +98,46 @@ self.addEventListener('activate', (event) => {
           if (cacheWhitelist.indexOf(cacheName) === -1) {
             return caches.delete(cacheName);
           }
-        })
+          return null;
+        }).filter(Boolean)
       );
-    })
+    }).catch(error => handleError(error, 'activation'))
   );
 });
 
 // Handle push notifications
 self.addEventListener('push', function(event) {
-  const data = event.data.json();
-  const options = {
-    body: data.body,
-    icon: '/logo192.png',
-    badge: '/favicon.ico',
-    data: {
-      url: data.url
+  try {
+    let notificationData = { title: 'New Notification', body: 'You have a new notification', url: '/' };
+    
+    if (event.data) {
+      try {
+        notificationData = event.data.json();
+      } catch (e) {
+        const text = event.data.text();
+        notificationData = { 
+          title: 'New Notification', 
+          body: text,
+          url: '/'
+        };
+      }
     }
-  };
+    
+    const options = {
+      body: notificationData.body || 'You have a new notification',
+      icon: '/logo192.png',
+      badge: '/favicon.ico',
+      data: {
+        url: notificationData.url || '/'
+      }
+    };
 
-  event.waitUntil(
-    self.registration.showNotification(data.title, options)
-  );
+    event.waitUntil(
+      self.registration.showNotification(notificationData.title, options)
+    );
+  } catch (error) {
+    handleError(error, 'push notification');
+  }
 });
 
 self.addEventListener('notificationclick', function(event) {
@@ -91,6 +146,20 @@ self.addEventListener('notificationclick', function(event) {
   if (event.notification.data && event.notification.data.url) {
     event.waitUntil(
       clients.openWindow(event.notification.data.url)
+        .catch(error => handleError(error, 'notification click'))
+    );
+  }
+});
+
+// Add an offline fallback page
+self.addEventListener('fetch', function(event) {
+  if (event.request.mode === 'navigate' || 
+      (event.request.method === 'GET' && 
+       event.request.headers.get('accept').includes('text/html'))) {
+    event.respondWith(
+      fetch(event.request).catch(function() {
+        return caches.match('/offline.html');
+      })
     );
   }
 });

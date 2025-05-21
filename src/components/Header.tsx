@@ -63,7 +63,7 @@ const Header = () => {
             >
               <Link
                 to={item.href}
-                className={`text-sm font-medium hover:text-travel-gold transition-colors animated-link ${
+                className={`text-sm font-medium hover:text-travel-gold transition-colors animated-link after:bg-travel-gold ${
                   location.pathname === item.href ? "text-travel-gold after:scale-x-100" : ""
                 }`}
               >

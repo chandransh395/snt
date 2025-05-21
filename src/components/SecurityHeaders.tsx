@@ -3,7 +3,7 @@ import { useEffect } from "react";
 
 const SecurityHeaders = () => {
   useEffect(() => {
-    // Add security-related meta tags to the document head
+    // More robust security-related meta tags
     const metaTags = [
       {
         httpEquiv: "Content-Security-Policy",
@@ -22,6 +22,14 @@ const SecurityHeaders = () => {
         content: "strict-origin-when-cross-origin"
       },
       {
+        httpEquiv: "Permissions-Policy",
+        content: "camera=(), microphone=(), geolocation=(self), interest-cohort=()"
+      },
+      {
+        httpEquiv: "X-Content-Type-Options",
+        content: "nosniff"
+      },
+      {
         name: "Cache-Control",
         content: "no-cache, no-store, must-revalidate"
       },
@@ -34,6 +42,17 @@ const SecurityHeaders = () => {
         content: "0"
       }
     ];
+
+    // Clean up any existing meta tags first to avoid duplicates
+    metaTags.forEach(({ httpEquiv, name }) => {
+      const selector = httpEquiv 
+        ? `meta[http-equiv="${httpEquiv}"]` 
+        : `meta[name="${name}"]`;
+      const existingMeta = document.querySelector(selector);
+      if (existingMeta && existingMeta.parentNode) {
+        existingMeta.parentNode.removeChild(existingMeta);
+      }
+    });
 
     // Add meta tags to document head
     metaTags.forEach(({ httpEquiv, name, content }) => {
