@@ -8,6 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import DestinationCard from './DestinationCard';
 import { motion } from 'framer-motion';
 
+// Define the type for a Destination object
 type Destination = {
   id: number;
   name: string;
@@ -90,11 +91,12 @@ const HomePage = () => {
             {/* "Looking for something else?" card */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3, delay: (topDestinations.length) * 0.1 }}
+              // Stagger animation delay for the "Looking for something else" card
+              animate={{ opacity: 1, y: 0 }} 
+              transition={{ duration: 0.3, delay: (topDestinations.length) * 0.1 }} 
               className="h-full"
             >
-              <Card className="overflow-hidden h-full flex flex-col bg-gradient-to-br from-indigo-50 to-amber-50 border-dashed border-travel-gold/30">
+              <Card className="overflow-hidden h-full flex flex-col bg-gradient-to-br from-indigo-50 to-amber-50 dark:bg-gradient-to-br dark:from-indigo-950 dark:to-amber-950 border-dashed border-travel-gold/30">
                 <CardContent className="p-6 flex flex-col items-center justify-center h-full text-center">
                   <div className="rounded-full bg-travel-gold/10 p-6 mb-6">
                     <MessageCircle className="h-12 w-12 text-travel-gold" />

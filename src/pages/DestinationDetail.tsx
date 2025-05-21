@@ -273,9 +273,9 @@ const DestinationDetail = () => {
               {/* Not Included */}
               <div className="bg-muted rounded-lg p-6">
                 <h3 className="text-xl font-semibold mb-4 font-sans">Not Included</h3>
-                <ul className="space-y-1">
+                <ul className="space-y-1 list-none p-0">
                   {notIncluded.map((item, index) => (
-                    <li key={index} className="text-sm text-muted-foreground pl-6 relative">
+                    <li key={index} className="text-sm text-muted-foreground pl-6 relative ml-0">
                       <span className="absolute left-0">•</span>
                       {item}
                     </li>
@@ -292,7 +292,7 @@ const DestinationDetail = () => {
                   <Link to={`/book/${destination.id}`}>Book This Journey</Link>
                 </Button>
                 <p className="text-center text-sm mt-2 text-muted-foreground">
-                  Starting from {destination.price}
+                  <span className="text-left">Starting from {destination.price}</span>
                 </p>
               </div>
             </div>

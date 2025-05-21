@@ -127,7 +127,7 @@ const Destinations = () => {
         <p className="text-muted-foreground">Discover your next adventure</p>
       </header>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8 items-center">
         <div className="relative">
           <Input
             type="search"
@@ -140,7 +140,6 @@ const Destinations = () => {
         </div>
 
         <div>
-          <Label htmlFor="region">Filter by Region</Label>
           <Select value={selectedRegion} onValueChange={handleRegionChange}>
             <SelectTrigger className="w-full">
               <SelectValue placeholder="All Regions" />

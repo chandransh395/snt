@@ -217,12 +217,12 @@ const BookingPage = () => {
   
   return (
     <BookingAuthWrapper destinationId={Number(id)} destinationName={destination?.name}>
-      <div className="container mx-auto py-12 px-4">
+      <div className="container mx-auto py-12 px-4 bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
         <h1 className="text-3xl md:text-4xl font-semibold mb-6">Book Your Trip</h1>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Destination Preview */}
           <div className="lg:col-span-1">
-            <div className="bg-white rounded-lg shadow-md overflow-hidden border border-gray-100">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden border border-gray-100 dark:border-gray-700">
               <div className="h-48 overflow-hidden">
                 <img 
                   src={destination?.image} 
@@ -231,8 +231,8 @@ const BookingPage = () => {
                 />
               </div>
               <div className="p-6">
-                <h2 className="text-2xl font-semibold mb-2">{destination?.name}</h2>
-                <p className="text-muted-foreground mb-4 capitalize">{destination?.region}</p>
+                <h2 className="text-2xl font-semibold mb-2 text-gray-900 dark:text-white">{destination?.name}</h2>
+                <p className="text-muted-foreground mb-4 capitalize text-gray-700 dark:text-gray-300">{destination?.region}</p>
                 
                 <div className="mb-6">
                   <h3 className="text-lg font-medium mb-2">Trip Duration</h3>
@@ -263,7 +263,7 @@ const BookingPage = () => {
                   </div>
                   <div>
                     <span className="text-sm text-muted-foreground">Total price</span>
-                    <p className="text-xl font-semibold text-travel-gold">{totalPrice}</p>
+                    <p className="text-xl font-semibold text-travel-gold dark:text-travel-gold-darker">{totalPrice}</p>
                     <span className="text-xs text-muted-foreground">
                       For {numTravelers} {numTravelers === 1 ? 'person' : 'people'}, {duration} {duration === 1 ? 'day' : 'days'}
                     </span>
@@ -275,7 +275,7 @@ const BookingPage = () => {
           
           {/* Booking Form */}
           <div className="lg:col-span-2">
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 bg-white p-6 rounded-lg shadow-md border border-gray-100">
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md border border-gray-100 dark:border-gray-700">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <Label htmlFor="travelerName">Full Name</Label>
