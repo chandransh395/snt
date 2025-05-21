@@ -1,4 +1,6 @@
+
 #root {
+  width: 100%;
   padding: 0;
   text-align: center;
 }
@@ -37,4 +39,39 @@
 
 .read-the-docs {
   color: #888;
+}
+
+/* Fix for overall container width */
+.container {
+  width: 100%;
+  max-width: 1400px;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+
+/* Ensure full-width sections */
+section {
+  width: 100%;
+}
+
+/* Fix the white margins */
+body {
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+  width: 100%;
+}
+
+/* Trust elements */
+.trust-element {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background-color: rgba(243, 244, 246, 0.7);
+  border-radius: 9999px;
+  font-size: 0.875rem;
+  color: #4b5563;
 }

@@ -1,5 +1,5 @@
 
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Inter:wght@300;400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -87,7 +87,7 @@
   }
 }
 
-/* Animation classes */
+/* Enhanced Animation classes */
 @layer components {
   .animate-fade-in {
     @apply transition-opacity duration-300 ease-in-out opacity-0 animate-in fade-in;
@@ -118,6 +118,19 @@
   .animated-link {
     @apply relative inline-block after:content-[''] after:absolute after:w-full after:scale-x-0 after:h-0.5 after:bottom-0 after:left-0 after:bg-primary after:origin-bottom-right after:transition-transform after:duration-300 hover:after:scale-x-100 hover:after:origin-bottom-left;
   }
+  
+  /* Design enhancers */
+  .card-highlight {
+    @apply border-travel-gold/30 bg-gradient-to-br from-white to-amber-50/20 dark:from-gray-900 dark:to-gray-800/50 shadow-md hover:shadow-lg transition-all duration-300;
+  }
+  
+  .text-gradient {
+    @apply bg-gradient-to-r from-travel-gold to-amber-500 bg-clip-text text-transparent;
+  }
+  
+  .trust-badge {
+    @apply flex items-center gap-2 text-sm bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 px-3 py-1.5 rounded-full;
+  }
 }
 
 @keyframes fadeIn {
@@ -141,7 +154,7 @@
     opacity: 0; 
   }
   to { 
-    transform: translateY(15px); 
+    transform: translateY(-15px); 
     opacity: 1; 
   }
 }
@@ -168,4 +181,26 @@
 
 .delay-300 {
   animation-delay: 300ms;
+}
+
+.delay-400 {
+  animation-delay: 400ms;
+}
+
+.delay-500 {
+  animation-delay: 500ms;
+}
+
+/* Trustworthiness elements */
+.verification-badge {
+  @apply inline-flex items-center gap-1 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 px-2 py-1 rounded-full text-xs;
+}
+
+.satisfaction-guarantee {
+  @apply flex items-center gap-2 bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 px-3 py-1.5 rounded-full text-sm;
+}
+
+/* Container width fix */
+.container {
+  @apply w-full max-w-[1400px] mx-auto;
 }

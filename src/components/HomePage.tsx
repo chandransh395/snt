@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Loader2, MessageCircle, Phone } from "lucide-react";
+import { Loader2, MessageCircle, Phone, BadgeCheck, Award, Shield } from "lucide-react";
 import { supabase } from '@/integrations/supabase/client';
 import DestinationCard from './DestinationCard';
 import { motion } from 'framer-motion';
@@ -28,7 +28,6 @@ const HomePage = () => {
   const [error, setError] = useState<string | null>(null);
 
   // Effect hook to fetch top destinations when the component mounts
-  // The dependency array is empty, so this effect runs only once after the initial render.
   useEffect(() => {
     const fetchTopDestinations = async () => {
       try {
@@ -65,17 +64,55 @@ const HomePage = () => {
     );
   }
 
+  const trustFeatures = [
+    { 
+      icon: <BadgeCheck className="h-5 w-5 text-green-500" />, 
+      text: "Verified Destinations" 
+    },
+    { 
+      icon: <Award className="h-5 w-5 text-blue-500" />, 
+      text: "Top Rated Services" 
+    },
+    { 
+      icon: <Shield className="h-5 w-5 text-amber-500" />, 
+      text: "Secure Payments" 
+    },
+  ];
+
   // Main JSX structure for the HomePage component
   return (
     <section className="py-16">
       <div className="container mx-auto text-center px-4">
+        {/* Animated Title */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
+          className="mb-8"
         >
-          <h2 className="text-3xl md:text-4xl font-bold mb-3 font-playfair">Top Destinations</h2>
-          <div className="w-20 h-1 bg-travel-gold mx-auto mb-8"></div>
+          <h2 className="text-3xl md:text-4xl font-bold mb-3 font-playfair relative inline-block">
+            <span className="text-gradient">Top Destinations</span>
+            <span className="absolute -bottom-1 left-0 h-1 w-full bg-gradient-to-r from-travel-gold to-amber-500"></span>
+          </h2>
+          <p className="text-muted-foreground mt-3 max-w-2xl mx-auto">
+            Discover our most popular and highest rated travel experiences, handpicked for exceptional adventures.
+          </p>
+          
+          {/* Trust indicators */}
+          <div className="flex flex-wrap justify-center gap-3 mt-4">
+            {trustFeatures.map((feature, index) => (
+              <motion.div
+                key={index}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 + (index * 0.1) }}
+                className="verification-badge"
+              >
+                {feature.icon}
+                <span>{feature.text}</span>
+              </motion.div>
+            ))}
+          </div>
         </motion.div>
         
         {loading ? (
@@ -83,7 +120,7 @@ const HomePage = () => {
             <Loader2 className="h-8 w-8 animate-spin text-travel-gold" />
           </div>
         ) : topDestinations.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {topDestinations.map((destination, index) => (
               <DestinationCard key={destination.id} destination={destination} index={index} />
             ))}
@@ -91,33 +128,38 @@ const HomePage = () => {
             {/* "Looking for something else?" card */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
-              // Stagger animation delay for the "Looking for something else" card
               animate={{ opacity: 1, y: 0 }} 
               transition={{ duration: 0.3, delay: (topDestinations.length) * 0.1 }} 
               className="h-full"
             >
-              <Card className="overflow-hidden h-full flex flex-col bg-gradient-to-br from-indigo-50 to-amber-50 dark:bg-gradient-to-br dark:from-indigo-950 dark:to-amber-950 border-dashed border-travel-gold/30">
-                <CardContent className="p-6 flex flex-col items-center justify-center h-full text-center">
-                  <div className="rounded-full bg-travel-gold/10 p-6 mb-6">
+              <Card className="overflow-hidden h-full flex flex-col bg-gradient-to-br from-indigo-50 to-amber-50 dark:from-indigo-950 dark:to-amber-950 border-dashed border-travel-gold/30 shadow-md hover:shadow-lg transition-all duration-300">
+                <CardContent className="p-8 flex flex-col items-center justify-center h-full text-center">
+                  <div className="rounded-full bg-travel-gold/10 p-6 mb-6 shadow-inner">
                     <MessageCircle className="h-12 w-12 text-travel-gold" />
                   </div>
                   
-                  <h3 className="text-2xl font-semibold mb-3">Looking for something else?</h3>
-                  <p className="text-muted-foreground mb-6">
-                    Don't see what you're looking for? Contact our travel experts for personalized recommendations!
+                  <h3 className="text-2xl font-semibold mb-4">Looking for something else?</h3>
+                  <p className="text-muted-foreground mb-8">
+                    Don't see what you're looking for? Our travel experts are ready to craft the perfect journey just for you.
                   </p>
                   
-                  <div className="flex flex-col sm:flex-row gap-4 mt-auto">
-                    <Button asChild className="bg-travel-gold hover:bg-amber-600 text-black">
-                      <Link to="/contact">Contact Us</Link>
+                  <div className="flex flex-col sm:flex-row gap-4 mt-auto w-full">
+                    <Button asChild className="bg-travel-gold hover:bg-amber-600 text-black w-full">
+                      <Link to="/contact">Contact Our Experts</Link>
                     </Button>
                     
-                    <Button variant="outline" asChild className="border-travel-gold text-travel-gold hover:bg-travel-gold/10">
+                    <Button variant="outline" asChild className="border-travel-gold text-travel-gold hover:bg-travel-gold/10 w-full">
                       <a href="tel:+1234567890">
                         <Phone className="h-4 w-4 mr-2" />
                         Call Now
                       </a>
                     </Button>
+                  </div>
+                  
+                  <div className="mt-5">
+                    <span className="satisfaction-guarantee">
+                      <Award className="h-4 w-4" /> 100% Satisfaction Guarantee
+                    </span>
                   </div>
                 </CardContent>
               </Card>
@@ -131,9 +173,10 @@ const HomePage = () => {
         )}
 
         <div className="text-center mt-12">
-          <Button asChild className="bg-travel-gold hover:bg-amber-600 text-black px-8 py-6 text-lg">
-            <Link to="/destinations">View All Destinations</Link>
+          <Button asChild className="bg-travel-gold hover:bg-amber-600 text-black px-8 py-6 text-lg shadow-md hover:shadow-lg transition-all">
+            <Link to="/destinations">Explore All Destinations</Link>
           </Button>
+          <p className="text-sm text-muted-foreground mt-4">Join thousands of satisfied travelers exploring the world with us</p>
         </div>
       </div>
     </section>
