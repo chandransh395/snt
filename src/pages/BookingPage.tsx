@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
@@ -14,6 +15,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { formatPrice } from '@/utils/currency';
 import BookingAuthWrapper from '@/components/BookingAuthWrapper';
+import { sendBookingNotification } from '@/utils/notifications';
 
 // Schema for form validation
 const bookingSchema = z.object({
@@ -135,16 +137,20 @@ const BookingPage = () => {
         special_requests: data.specialRequests,
         price: priceValue,
         status: 'pending',
-        duration_days: duration,
+        // Remove duration_days field as it doesn't exist in the database schema
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       };
       
-      const { error } = await supabase
+      const { data: insertedData, error } = await supabase
         .from('bookings')
-        .insert([bookingData]);
+        .insert([bookingData])
+        .select();
       
       if (error) throw error;
+
+      // Get the inserted booking ID
+      const bookingId = insertedData?.[0]?.id;
       
       toast({
         title: 'Booking successful!',
@@ -157,6 +163,20 @@ const BookingPage = () => {
       
       if (rpcError) {
         console.error('Error incrementing booking count:', rpcError);
+      }
+
+      // Send notification if we have a booking ID
+      if (bookingId) {
+        try {
+          await sendBookingNotification(
+            bookingId,
+            destination.name,
+            data.travelerName
+          );
+        } catch (notifyError) {
+          console.error('Error sending notification:', notifyError);
+          // Non-critical error, don't prevent booking success
+        }
       }
       
       // Redirect to success page

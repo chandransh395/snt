@@ -2,14 +2,18 @@
 import * as React from "react";
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Button } from "@/components/ui/button";
 import { 
   Menu, X, User, LogOut, Home, Info, Map, BookOpen, 
   MessageSquare, ShieldCheck 
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
+import {
+  Sheet,
+  SheetContent,
+  SheetTrigger,
+} from "@/components/ui/sheet";
+import { Button } from "@/components/ui/button";
 
 interface MobileNavProps {
   navLinks: Array<{
@@ -71,7 +75,7 @@ const MobileNav = ({ navLinks }: MobileNavProps) => {
           <span className="sr-only">Toggle menu</span>
         </Button>
       </SheetTrigger>
-      <SheetContent side="left" className="w-[300px] sm:w-[400px] flex flex-col">
+      <SheetContent side="left" className="w-[280px] sm:w-[350px] flex flex-col">
         <div className="flex items-center justify-between border-b pb-4">
           <div className="font-bold text-lg">Menu</div>
           <Button variant="ghost" size="icon" onClick={() => setOpen(false)}>

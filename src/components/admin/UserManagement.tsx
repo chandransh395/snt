@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -94,7 +93,7 @@ const UserManagement = () => {
           // Basic user info from profile
           return {
             id: profile.id,
-            email: profile.username || 'Unknown Email', // Use username as email fallback
+            email: profile.username || 'Unknown Email', // Use username as email
             created_at: profile.created_at,
             username: profile.username || 'Unknown',
             is_admin: roleInfo ? !!roleInfo.is_admin : false,

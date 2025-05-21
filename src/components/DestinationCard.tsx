@@ -1,9 +1,11 @@
 
 import { Link, useNavigate } from 'react-router-dom';
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { formatPrice } from '@/utils/currency';
 import { motion } from 'framer-motion';
+import { Calendar } from 'lucide-react';
 
 type Destination = {
   id: number;
@@ -29,6 +31,11 @@ const DestinationCard: React.FC<DestinationCardProps> = ({ destination, index = 
     navigate(`/destinations/${destination.id}`);
   };
 
+  const handleBookNow = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent card click
+    navigate(`/book/${destination.id}`);
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -38,7 +45,7 @@ const DestinationCard: React.FC<DestinationCardProps> = ({ destination, index = 
       className="h-full"
       onClick={handleCardClick}
     >
-      <Card className="overflow-hidden h-full transition-all duration-300 hover:shadow-lg border-muted/40 cursor-pointer">
+      <Card className="overflow-hidden h-full flex flex-col transition-all duration-300 hover:shadow-lg border-muted/40 cursor-pointer">
         <div className="relative h-52 overflow-hidden">
           <img
             src={destination.image || 'https://images.unsplash.com/photo-1500673922987-e212871fec22?auto=format&fit=crop&w=600&q=60'}
@@ -60,7 +67,7 @@ const DestinationCard: React.FC<DestinationCardProps> = ({ destination, index = 
           </div>
         </div>
 
-        <CardContent className="p-4">
+        <CardContent className="p-4 flex-grow">
           <p className="text-sm line-clamp-3 text-muted-foreground mb-4">
             {destination.description}
           </p>
@@ -73,6 +80,15 @@ const DestinationCard: React.FC<DestinationCardProps> = ({ destination, index = 
             ))}
           </div>
         </CardContent>
+
+        <CardFooter className="p-4 pt-0">
+          <Button 
+            className="w-full bg-travel-gold hover:bg-amber-600 text-black"
+            onClick={handleBookNow}
+          >
+            <Calendar className="h-4 w-4 mr-2" /> Book Now
+          </Button>
+        </CardFooter>
       </Card>
     </motion.div>
   );
