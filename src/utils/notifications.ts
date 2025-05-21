@@ -38,6 +38,18 @@ export async function sendBookingNotification(bookingId: string, destinationName
       
     if (error) throw error;
     
+    // Send browser notification if possible
+    if ('Notification' in window && Notification.permission === 'granted') {
+      const notification = new Notification('New Booking Received', {
+        body: `${travelerName} booked ${destinationName}`,
+        icon: '/logo192.png',
+        badge: '/favicon.ico'
+      });
+      
+      // Close notification after 5 seconds
+      setTimeout(() => notification.close(), 5000);
+    }
+    
   } catch (error) {
     console.error('Error sending notification:', error);
   }
@@ -101,6 +113,18 @@ export function setupBookingNotifications() {
         description: `${booking.traveler_name} booked ${booking.destination_name}`,
       });
       
+      // Also send browser notification if permission granted
+      if ('Notification' in window && Notification.permission === 'granted') {
+        const notification = new Notification('New Booking Received', {
+          body: `${booking.traveler_name} booked ${booking.destination_name}`,
+          icon: '/logo192.png',
+          badge: '/favicon.ico'
+        });
+        
+        // Close after 5 seconds
+        setTimeout(() => notification.close(), 5000);
+      }
+      
       // Also create a notification record
       sendBookingNotification(
         booking.id, 
@@ -110,7 +134,29 @@ export function setupBookingNotifications() {
     })
     .subscribe();
     
+  // Setup notification permission request for admin users
+  if ('Notification' in window && window.location.pathname.includes('/admin')) {
+    if (Notification.permission !== 'granted' && Notification.permission !== 'denied') {
+      Notification.requestPermission();
+    }
+  }
+    
   return () => {
     supabase.removeChannel(channel);
   };
+}
+
+// Update Vite config to properly handle the service worker
+export function registerServiceWorker() {
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/service-worker.js')
+        .then(registration => {
+          console.log('ServiceWorker registration successful with scope: ', registration.scope);
+        })
+        .catch(error => {
+          console.error('ServiceWorker registration failed: ', error);
+        });
+    });
+  }
 }

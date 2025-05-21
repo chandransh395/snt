@@ -1,4 +1,5 @@
 
+/* Optimize font loading */
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
 
 @tailwind base;
@@ -77,11 +78,13 @@
   html, body {
     @apply overflow-x-hidden;
     max-width: 100vw;
+    scroll-behavior: smooth;
   }
 
   body {
     @apply bg-background text-foreground font-inter;
     width: 100%;
+    text-rendering: optimizeSpeed;
   }
   
   h1, h2, h3, h4, h5, h6 {
@@ -90,6 +93,11 @@
   
   .section-padding {
     @apply py-16 md:py-24 px-4 md:px-8 lg:px-16;
+  }
+
+  /* Content visibility optimization */
+  .cv-auto {
+    content-visibility: auto;
   }
 }
 

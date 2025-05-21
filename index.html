@@ -7,7 +7,9 @@
     <title>Seeta Narayan Travels | Luxury Travel Agency</title>
     <meta name="description" content="Seeta Narayan Travels is a luxury travel agency specializing in personalized travel experiences and curated journeys to the world's most incredible destinations." />
     <meta name="author" content="Seeta Narayan Travels" />
+    <meta name="theme-color" content="#EAB308" />
 
+    <!-- Open Graph / Social Media Meta Tags -->
     <meta property="og:title" content="Seeta Narayan Travels | Luxury Travel Agency" />
     <meta property="og:description" content="Discover handcrafted luxury travel experiences with Seeta Narayan Travels, your premium travel partner." />
     <meta property="og:type" content="website" />
@@ -17,8 +19,17 @@
     <meta name="twitter:site" content="@seetanarayantravels" />
     <meta name="twitter:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
     
+    <!-- PWA Support -->
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="apple-touch-icon" href="/logo192.png" />
+    
     <!-- Favicon -->
     <link rel="icon" type="image/svg+xml" href="/favicon.ico" />
+    
+    <!-- Preload Critical Resources -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="preload" href="/src/index.css" as="style" />
   </head>
 
   <body>
@@ -26,5 +37,17 @@
     <!-- IMPORTANT: DO NOT REMOVE THIS SCRIPT TAG OR THIS VERY COMMENT! -->
     <script src="https://cdn.gpteng.co/gptengineer.js" type="module"></script>
     <script type="module" src="/src/main.tsx"></script>
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function() {
+          navigator.serviceWorker.register('/service-worker.js')
+            .then(function(registration) {
+              console.log('ServiceWorker registration successful with scope: ', registration.scope);
+            }, function(err) {
+              console.log('ServiceWorker registration failed: ', err);
+            });
+        });
+      }
+    </script>
   </body>
 </html>
