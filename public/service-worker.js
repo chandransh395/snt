@@ -1,5 +1,6 @@
-const CACHE_NAME = 'seeta-narayan-cache-v3';
-const DYNAMIC_CACHE = 'seeta-narayan-dynamic-v3';
+
+const CACHE_NAME = 'seeta-narayan-cache-v4';
+const DYNAMIC_CACHE = 'seeta-narayan-dynamic-v4';
 const urlsToCache = [
   '/',
   '/index.html',
@@ -8,10 +9,15 @@ const urlsToCache = [
   '/favicon.ico',
   '/logo192.png',
   '/logo512.png',
-  '/placeholder.svg',
-  '/destinations',
+  '/placeholder.svg'
+];
+
+// Routes that should be cached for offline access
+const OFFLINE_ROUTES = [
+  '/',
   '/about',
-  '/blog',
+  '/destinations',
+  '/blog', 
   '/contact'
 ];
 
@@ -19,7 +25,8 @@ const urlsToCache = [
 const STATIC_ASSETS = [
   '/src/index.css',
   '/src/App.css',
-  '/lovable-uploads/6c2cfdb5-e191-4f38-a35b-c5357e126036.png'
+  '/lovable-uploads/6c2cfdb5-e191-4f38-a35b-c5357e126036.png',
+  '/lovable-uploads/a3663b67-e938-40ec-b12d-77f0765c7bbb.png'
 ];
 
 // Error handling helper
@@ -48,6 +55,18 @@ const isNavigationRequest = (request) => {
      request.headers.get('accept').includes('text/html'));
 };
 
+// Helper to check if this is a route we should handle offline
+const isOfflineRoute = (url) => {
+  // Extract the path from the URL
+  const path = new URL(url).pathname;
+  
+  // Check if this path is in our offline routes
+  return OFFLINE_ROUTES.some(route => {
+    // Check if the path is exactly the route or starts with the route followed by /
+    return path === route || path.startsWith(`${route}/`);
+  });
+};
+
 // Helper function to add to cache
 const addToCache = (cacheName, request, response) => {
   if (response && response.ok) {
@@ -59,13 +78,20 @@ const addToCache = (cacheName, request, response) => {
   return response;
 };
 
+// Helper function to get the index.html for client-side routing
+const getIndexHtmlFromCache = () => {
+  return caches.open(CACHE_NAME).then(cache => {
+    return cache.match('/index.html');
+  });
+};
+
 self.addEventListener('install', (event) => {
   console.log('[ServiceWorker] Install');
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then((cache) => {
         console.log('[ServiceWorker] Caching app shell');
-        return cache.addAll([...urlsToCache, ...STATIC_ASSETS]);
+        return cache.addAll([...urlsToCache, ...STATIC_ASSETS, ...OFFLINE_ROUTES]);
       })
       .then(() => {
         console.log('[ServiceWorker] Successfully cached app shell');
@@ -111,13 +137,8 @@ self.addEventListener('fetch', (event) => {
       // For third-party assets, use network with cache fallback
       event.respondWith(
         fetch(request)
-          .then(response => {
-            // Only cache successful responses
-            return addToCache(DYNAMIC_CACHE, request, response);
-          })
-          .catch(() => {
-            return caches.match(request);
-          })
+          .then(response => addToCache(DYNAMIC_CACHE, request, response))
+          .catch(() => caches.match(request))
       );
     }
     return;
@@ -148,41 +169,48 @@ self.addEventListener('fetch', (event) => {
     return;
   }
   
-  // HTML Navigation Requests - try cache first, then network
+  // HTML Navigation Requests - Implement SPA/Offline support
   if (isNavigationRequest(request)) {
     event.respondWith(
+      // First try to get the resource from the cache
       caches.match(request)
         .then(cachedResponse => {
           if (cachedResponse) {
-            // Return cached response and update cache in background
+            // If found in cache, return it and update cache in background
             const updateCache = fetch(request)
               .then(networkResponse => {
                 if (networkResponse && networkResponse.ok) {
-                  const clone = networkResponse.clone();
                   caches.open(CACHE_NAME).then(cache => {
-                    cache.put(request, clone);
+                    cache.put(request, networkResponse.clone());
                   });
                 }
               })
-              .catch(() => console.log('[ServiceWorker] Network request failed for:', request.url));
+              .catch(() => {});
             
             // Don't wait for the network update
             event.waitUntil(updateCache);
             return cachedResponse;
           }
           
-          // If not in cache, try network
+          // Not in cache - try network
           return fetch(request)
             .then(networkResponse => {
               if (networkResponse && networkResponse.ok) {
-                const clone = networkResponse.clone();
+                const clonedResponse = networkResponse.clone();
                 caches.open(CACHE_NAME).then(cache => {
-                  cache.put(request, clone);
+                  cache.put(request, clonedResponse);
                 });
+                return networkResponse;
               }
-              return networkResponse;
+              throw new Error('Network fetch failed');
             })
             .catch(() => {
+              // For SPA routes, serve the cached index.html for client-side routing
+              if (isOfflineRoute(request.url)) {
+                return getIndexHtmlFromCache();
+              }
+              
+              // Last resort - show offline page
               return caches.match('/offline.html');
             });
         })
@@ -220,7 +248,8 @@ self.addEventListener('fetch', (event) => {
                 });
               }
               return networkResponse;
-            });
+            })
+            .catch(() => caches.match('/placeholder.svg'));
         })
     );
     return;
@@ -229,9 +258,7 @@ self.addEventListener('fetch', (event) => {
   // Default strategy for everything else - network first, then cache
   event.respondWith(
     fetch(request)
-      .then(response => {
-        return addToCache(DYNAMIC_CACHE, request, response);
-      })
+      .then(response => addToCache(DYNAMIC_CACHE, request, response))
       .catch(() => {
         return caches.match(request)
           .then(cachedResponse => {

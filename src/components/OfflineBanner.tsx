@@ -27,7 +27,7 @@ const OfflineBanner = () => {
       className={`fixed top-0 left-0 right-0 p-2 bg-red-600 text-white flex items-center justify-center space-x-2 z-50 text-sm transition-transform duration-300 ${visible ? 'translate-y-0' : '-translate-y-full'}`}
     >
       <WifiOff size={16} />
-      <span>You're offline. Some features may be limited.</span>
+      <span>You're offline. Some features may be limited but you can still browse the site.</span>
     </div>
   );
 };

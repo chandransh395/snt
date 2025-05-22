@@ -53,24 +53,33 @@
                 registration.update();
               }, 60 * 60 * 1000); // Check for updates every hour
               
-              // Set up a communication channel with the service worker
-              const messageChannel = new MessageChannel();
-              messageChannel.port1.onmessage = event => {
-                if (event.data && event.data.type === 'CONNECTIVITY_CHANGE') {
-                  window.dispatchEvent(new CustomEvent('connectivity-change', {
-                    detail: { status: event.data.status }
-                  }));
-                }
-              };
+              // Create a communication system that avoids port issues
+              let connectivityCheckInterval;
               
-              // Check connectivity status initially and periodically
-              if (registration.active) {
-                setInterval(() => {
-                  registration.active.postMessage({
-                    type: 'CHECK_CONNECTIVITY'
-                  }, [messageChannel.port2]);
-                }, 30000); // Check every 30 seconds
+              function checkConnectivity() {
+                // Direct fetch approach
+                fetch('/ping.json?_=' + Date.now(), { cache: 'no-store' })
+                  .then(() => {
+                    window.dispatchEvent(new CustomEvent('connectivity-change', {
+                      detail: { status: 'online' }
+                    }));
+                  })
+                  .catch(() => {
+                    window.dispatchEvent(new CustomEvent('connectivity-change', {
+                      detail: { status: 'offline' }
+                    }));
+                  });
               }
+              
+              // Start connectivity checks
+              if (connectivityCheckInterval) {
+                clearInterval(connectivityCheckInterval);
+              }
+              
+              connectivityCheckInterval = setInterval(checkConnectivity, 30000);
+              
+              // Run an immediate check
+              checkConnectivity();
             }, function(err) {
               console.log('ServiceWorker registration failed: ', err);
             });
