@@ -25,19 +25,6 @@ if ('Notification' in window) {
   });
 }
 
-// Register service worker for PWA functionality only if not in StackBlitz
-if ('serviceWorker' in navigator && !window.navigator.userAgent.includes('StackBlitz')) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/service-worker.js')
-      .then(registration => {
-        console.info('ServiceWorker registration successful with scope: ', registration.scope);
-      })
-      .catch(error => {
-        console.error('ServiceWorker registration failed: ', error);
-      });
-  });
-}
-
 // Add offline detection
 const updateOnlineStatus = () => {
   const offlineIndicator = document.getElementById('offline-indicator');
