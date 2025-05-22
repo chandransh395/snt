@@ -14,17 +14,16 @@ export async function setupSuperAdmin() {
     const { data: allUsers, error: authError } = await supabase
       .from('profiles')
       .select('id, username')
-      .eq('username', superAdminEmail);
+      .eq('username', superAdminEmail)
+      .limit(1)
+      .single();
       
     if (authError) {
       console.error('Error checking for super admin:', authError);
       return;
     }
     
-    // Find any user that matches our super admin email
-    const superAdminUser = allUsers?.find(u => u.username === superAdminEmail);
-    
-    if (!superAdminUser) {
+    if (!allUsers) {
       console.log('Designated super admin user not found. It will be set up when they first sign up:', superAdminEmail);
       return;
     }
@@ -33,7 +32,8 @@ export async function setupSuperAdmin() {
     const { data: roleData, error: roleError } = await supabase
       .from('user_roles')
       .select('*')
-      .eq('user_id', superAdminUser.id)
+      .eq('user_id', allUsers.id)
+      .limit(1)
       .single();
       
     if (roleError && roleError.code !== 'PGRST116') {
@@ -49,7 +49,8 @@ export async function setupSuperAdmin() {
           is_admin: true,
           is_super_admin: true
         })
-        .eq('user_id', superAdminUser.id);
+        .eq('user_id', allUsers.id)
+        .limit(1);
         
       if (updateError) {
         console.error('Error updating super admin role:', updateError);
@@ -61,7 +62,7 @@ export async function setupSuperAdmin() {
       const { error: insertError } = await supabase
         .from('user_roles')
         .insert({
-          user_id: superAdminUser.id,
+          user_id: allUsers.id,
           is_admin: true,
           is_super_admin: true,
         });
@@ -72,8 +73,6 @@ export async function setupSuperAdmin() {
         console.log('Created super admin role for:', superAdminEmail);
       }
     }
-    
-    // Ensure user has a profile if needed (already checked above)
     
   } catch (error) {
     console.error('Error in setupSuperAdmin:', error);
@@ -91,6 +90,7 @@ export async function isSuperAdmin(userId: string): Promise<boolean> {
       .from('user_roles')
       .select('is_super_admin')
       .eq('user_id', userId)
+      .limit(1)
       .single();
       
     if (error) {
