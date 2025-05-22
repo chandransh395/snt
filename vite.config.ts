@@ -27,7 +27,7 @@ export default defineConfig(({ mode }) => ({
         manualChunks: {
           vendor: ['react', 'react-dom', 'react-router-dom'],
           ui: ['@radix-ui/react-toast', '@radix-ui/react-dialog'],
-          components: ['./src/components/ui/**/*.tsx'],
+          // Remove the problematic glob pattern
           framer: ['framer-motion'],
         },
       }
