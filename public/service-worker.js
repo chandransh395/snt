@@ -1,15 +1,25 @@
-const CACHE_NAME = 'seeta-narayan-cache-v2';
+const CACHE_NAME = 'seeta-narayan-cache-v3';
+const DYNAMIC_CACHE = 'seeta-narayan-dynamic-v3';
 const urlsToCache = [
   '/',
   '/index.html',
   '/offline.html',
+  '/manifest.json',
   '/favicon.ico',
   '/logo192.png',
   '/logo512.png',
-  '/manifest.json',
+  '/placeholder.svg',
   '/destinations',
   '/about',
-  '/blog'
+  '/blog',
+  '/contact'
+];
+
+// Assets that should definitely be cached
+const STATIC_ASSETS = [
+  '/src/index.css',
+  '/src/App.css',
+  '/lovable-uploads/6c2cfdb5-e191-4f38-a35b-c5357e126036.png'
 ];
 
 // Error handling helper
@@ -17,164 +27,249 @@ const handleError = (error, action) => {
   console.error(`Service worker ${action} error:`, error);
 };
 
+// Helper to determine if a request is for an API call
+const isApiRequest = (url) => {
+  return url.includes('/api/') || 
+         url.includes('/supabase') ||
+         url.includes('githubusercontent.com') ||
+         url.includes('cdn.jsdelivr.net');
+};
+
+// Helper to determine if a request is for a static asset
+const isStaticAsset = (url) => {
+  return url.match(/\.(js|css|png|jpg|jpeg|gif|svg|woff|woff2|ttf|eot|ico)$/i);
+};
+
+// Helper function to determine if a page should work offline
+const isNavigationRequest = (request) => {
+  return request.mode === 'navigate' || 
+    (request.method === 'GET' && 
+     request.headers.get('accept') && 
+     request.headers.get('accept').includes('text/html'));
+};
+
+// Helper function to add to cache
+const addToCache = (cacheName, request, response) => {
+  if (response && response.ok) {
+    const clone = response.clone();
+    caches.open(cacheName).then(cache => {
+      cache.put(request, clone);
+    });
+  }
+  return response;
+};
+
 self.addEventListener('install', (event) => {
+  console.log('[ServiceWorker] Install');
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then((cache) => {
-        console.log('Opened cache');
-        return cache.addAll(urlsToCache);
+        console.log('[ServiceWorker] Caching app shell');
+        return cache.addAll([...urlsToCache, ...STATIC_ASSETS]);
       })
-      .catch(error => handleError(error, 'installation'))
+      .then(() => {
+        console.log('[ServiceWorker] Successfully cached app shell');
+        return self.skipWaiting();
+      })
+      .catch(error => {
+        handleError(error, 'installation');
+        throw error;
+      })
   );
-  // Force the waiting service worker to become the active service worker
-  self.skipWaiting();
 });
 
 self.addEventListener('activate', (event) => {
-  const cacheWhitelist = [CACHE_NAME];
+  console.log('[ServiceWorker] Activate');
+  const cacheWhitelist = [CACHE_NAME, DYNAMIC_CACHE];
   event.waitUntil(
-    caches.keys().then((cacheNames) => {
-      return Promise.all(
-        cacheNames.map((cacheName) => {
-          if (cacheWhitelist.indexOf(cacheName) === -1) {
-            console.log('Deleting old cache:', cacheName);
-            return caches.delete(cacheName);
-          }
-          return null;
-        }).filter(Boolean)
-      );
-    }).then(() => {
-      // Take control of all clients as soon as the service worker activates
-      return self.clients.claim();
-    }).catch(error => handleError(error, 'activation'))
+    caches.keys()
+      .then((cacheNames) => {
+        return Promise.all(
+          cacheNames.map((cacheName) => {
+            if (cacheWhitelist.indexOf(cacheName) === -1) {
+              console.log('[ServiceWorker] Deleting old cache:', cacheName);
+              return caches.delete(cacheName);
+            }
+          }).filter(Boolean)
+        );
+      })
+      .then(() => {
+        console.log('[ServiceWorker] Claiming clients');
+        return self.clients.claim();
+      })
+      .catch(error => handleError(error, 'activation'))
   );
 });
 
-// Improved fetch event handler with network-first strategy for API routes and cache-first for assets
 self.addEventListener('fetch', (event) => {
   const request = event.request;
   const url = new URL(request.url);
   
-  // Skip cross-origin requests
+  // Don't cache cross-origin requests to improve performance
   if (url.origin !== self.location.origin) {
+    if (!isApiRequest(request.url)) {
+      // For third-party assets, use network with cache fallback
+      event.respondWith(
+        fetch(request)
+          .then(response => {
+            // Only cache successful responses
+            return addToCache(DYNAMIC_CACHE, request, response);
+          })
+          .catch(() => {
+            return caches.match(request);
+          })
+      );
+    }
     return;
   }
 
-  // Network first strategy for API routes and dynamic content
-  if (request.url.includes('/api/') || 
-      request.url.includes('/auth') || 
-      request.url.includes('supabase')) {
+  // API Requests - Network only with offline fallback message
+  if (isApiRequest(request.url)) {
     event.respondWith(
       fetch(request)
-        .then(response => {
-          return response;
-        })
         .catch(() => {
-          return caches.match('/offline.html');
+          if (isNavigationRequest(request)) {
+            return caches.match('/offline.html');
+          }
+          
+          // Return a simple JSON response for API requests
+          return new Response(
+            JSON.stringify({ 
+              error: true, 
+              message: 'You are currently offline. Please check your connection.' 
+            }),
+            { 
+              status: 503, 
+              headers: { 'Content-Type': 'application/json' } 
+            }
+          );
         })
     );
     return;
   }
   
-  // Cache first for HTML navigation routes (destinations, about, blog)
-  if (request.mode === 'navigate' || 
-     (request.method === 'GET' && 
-      request.headers.get('accept') && 
-      request.headers.get('accept').includes('text/html'))) {
-    
-    // Try cache first for these specific routes
-    const isSpecificRoute = ['/destinations', '/about', '/blog'].some(route => 
-      url.pathname === route || url.pathname.startsWith(`${route}/`)
-    );
-    
-    if (isSpecificRoute) {
-      event.respondWith(
-        caches.match(request)
-          .then(response => {
-            return response || fetch(request)
-              .then(fetchResponse => {
-                // Clone the response to store in cache
-                const responseToCache = fetchResponse.clone();
-                caches.open(CACHE_NAME)
-                  .then(cache => {
-                    cache.put(request, responseToCache);
-                  });
-                return fetchResponse;
-              })
-              .catch(() => {
-                // If both cache and network fail, show offline page
-                return caches.match('/offline.html');
-              });
-          })
-      );
-      return;
-    }
-    
-    // For other navigation routes, try network first then cache
-    event.respondWith(
-      fetch(request)
-        .then(response => {
-          // Cache successful responses
-          const responseToCache = response.clone();
-          caches.open(CACHE_NAME)
-            .then(cache => {
-              cache.put(request, responseToCache);
-            });
-          return response;
-        })
-        .catch(() => {
-          return caches.match(request)
-            .then(cachedResponse => {
-              if (cachedResponse) {
-                return cachedResponse;
-              }
-              return caches.match('/offline.html');
-            });
-        })
-    );
-    return;
-  }
-  
-  // Cache-first strategy for static assets (images, CSS, JS)
-  if (request.url.match(/\.(js|css|png|jpg|jpeg|gif|svg|woff|woff2|ttf|eot)$/)) {
+  // HTML Navigation Requests - try cache first, then network
+  if (isNavigationRequest(request)) {
     event.respondWith(
       caches.match(request)
-        .then(response => {
-          return response || fetch(request)
-            .then(fetchResponse => {
-              const responseToCache = fetchResponse.clone();
-              caches.open(CACHE_NAME)
-                .then(cache => {
-                  cache.put(request, responseToCache);
+        .then(cachedResponse => {
+          if (cachedResponse) {
+            // Return cached response and update cache in background
+            const updateCache = fetch(request)
+              .then(networkResponse => {
+                if (networkResponse && networkResponse.ok) {
+                  const clone = networkResponse.clone();
+                  caches.open(CACHE_NAME).then(cache => {
+                    cache.put(request, clone);
+                  });
+                }
+              })
+              .catch(() => console.log('[ServiceWorker] Network request failed for:', request.url));
+            
+            // Don't wait for the network update
+            event.waitUntil(updateCache);
+            return cachedResponse;
+          }
+          
+          // If not in cache, try network
+          return fetch(request)
+            .then(networkResponse => {
+              if (networkResponse && networkResponse.ok) {
+                const clone = networkResponse.clone();
+                caches.open(CACHE_NAME).then(cache => {
+                  cache.put(request, clone);
                 });
-              return fetchResponse;
+              }
+              return networkResponse;
+            })
+            .catch(() => {
+              return caches.match('/offline.html');
+            });
+        })
+    );
+    return;
+  }
+
+  // Static Assets (JS, CSS, Images, Fonts) - Cache First, Then Network
+  if (isStaticAsset(request.url)) {
+    event.respondWith(
+      caches.match(request)
+        .then(cachedResponse => {
+          if (cachedResponse) {
+            // Return cached response and update cache in background
+            const updateCache = fetch(request)
+              .then(networkResponse => {
+                if (networkResponse && networkResponse.ok) {
+                  caches.open(CACHE_NAME).then(cache => {
+                    cache.put(request, networkResponse.clone());
+                  });
+                }
+              })
+              .catch(() => {});
+            
+            event.waitUntil(updateCache);
+            return cachedResponse;
+          }
+          
+          return fetch(request)
+            .then(networkResponse => {
+              if (networkResponse && networkResponse.ok) {
+                const clone = networkResponse.clone();
+                caches.open(CACHE_NAME).then(cache => {
+                  cache.put(request, clone);
+                });
+              }
+              return networkResponse;
             });
         })
     );
     return;
   }
   
-  // Default strategy
+  // Default strategy for everything else - network first, then cache
   event.respondWith(
-    caches.match(request)
+    fetch(request)
       .then(response => {
-        return response || fetch(request)
-          .catch(() => {
-            // If it's a navigation request, return the offline page
-            if (request.mode === 'navigate') {
-              return caches.match('/offline.html');
-            }
-            // For images, you could return a default offline image
-            if (request.url.match(/\.(jpg|png|gif|svg)$/)) {
-              return caches.match('/placeholder.svg');
-            }
-            return new Response('Network error occurred', {
-              status: 503,
-              headers: new Headers({ 'Content-Type': 'text/plain' })
-            });
+        return addToCache(DYNAMIC_CACHE, request, response);
+      })
+      .catch(() => {
+        return caches.match(request)
+          .then(cachedResponse => {
+            return cachedResponse || caches.match('/offline.html');
           });
       })
   );
+});
+
+// Handle connectivity changes to notify client pages
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'CHECK_CONNECTIVITY') {
+    const clientId = event.source.id;
+    
+    fetch('/ping.json?_=' + Date.now(), { cache: 'no-store' })
+      .then(() => {
+        // Connected
+        self.clients.get(clientId).then(client => {
+          if (client) {
+            client.postMessage({
+              type: 'CONNECTIVITY_CHANGE',
+              status: 'online'
+            });
+          }
+        });
+      })
+      .catch(() => {
+        // Disconnected
+        self.clients.get(clientId).then(client => {
+          if (client) {
+            client.postMessage({
+              type: 'CONNECTIVITY_CHANGE',
+              status: 'offline'
+            });
+          }
+        });
+      });
+  }
 });
 
 // Handle push notifications
@@ -236,4 +331,27 @@ self.addEventListener('notificationclick', function(event) {
         .catch(error => handleError(error, 'notification click'))
     );
   }
+});
+
+// Listen for network status changes
+self.addEventListener('online', event => {
+  self.clients.matchAll().then(clients => {
+    clients.forEach(client => {
+      client.postMessage({
+        type: 'CONNECTIVITY_CHANGE',
+        status: 'online'
+      });
+    });
+  });
+});
+
+self.addEventListener('offline', event => {
+  self.clients.matchAll().then(clients => {
+    clients.forEach(client => {
+      client.postMessage({
+        type: 'CONNECTIVITY_CHANGE',
+        status: 'offline'
+      });
+    });
+  });
 });

@@ -27,21 +27,28 @@ export default defineConfig(({ mode }) => ({
         manualChunks: {
           vendor: ['react', 'react-dom', 'react-router-dom'],
           ui: ['@radix-ui/react-toast', '@radix-ui/react-dialog'],
-          // Remove the problematic glob pattern
           framer: ['framer-motion'],
         },
       }
     },
     // Enable source maps for production
-    sourcemap: true,
+    sourcemap: mode !== 'production',
     // Optimize CSS
     cssCodeSplit: true,
-    // Minify assets
+    // Optimize assets
     assetsInlineLimit: 4096,
     // Add image compression
     target: 'esnext',
     // Reduce chunk size warnings threshold
     chunkSizeWarningLimit: 1000,
+    // Minify output
+    minify: 'terser',
+    terserOptions: {
+      compress: {
+        drop_console: mode === 'production',
+        drop_debugger: mode === 'production'
+      }
+    }
   },
   preview: {
     port: 8080,

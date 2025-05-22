@@ -5,8 +5,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Seeta Narayan Travel - Offline</title>
-  <link rel="icon" href="/lovable-uploads/6c2cfdb5-e191-4f38-a35b-c5357e126036.png" type="image/png">
+  <link rel="icon" href="/lovable-uploads/a3663b67-e938-40ec-b12d-77f0765c7bbb.png" type="image/png">
   <style>
+    :root {
+      --travel-gold: #DBA11C;
+    }
     body {
       font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       margin: 0;
@@ -15,7 +18,7 @@
       flex-direction: column;
       justify-content: center;
       align-items: center;
-      height: 100vh;
+      min-height: 100vh;
       text-align: center;
       background-color: #000000;
       color: #ffffff;
@@ -32,6 +35,10 @@
       width: 120px;
       height: 120px;
       margin-bottom: 1.5rem;
+      border-radius: 50%;
+      object-fit: contain;
+      background-color: #fff;
+      padding: 5px;
     }
     h1 {
       font-weight: 700;
@@ -39,7 +46,7 @@
       font-size: 1.875rem;
     }
     .highlight {
-      color: #DBA11C;
+      color: var(--travel-gold);
     }
     p {
       margin-bottom: 1.5rem;
@@ -48,16 +55,23 @@
     }
     .button {
       display: inline-block;
-      background-color: #DBA11C;
+      background-color: var(--travel-gold);
       color: black;
       padding: 0.75rem 1.5rem;
       border-radius: 0.375rem;
       text-decoration: none;
       font-weight: 500;
       transition: background-color 0.3s;
+      border: none;
+      cursor: pointer;
     }
     .button:hover {
       background-color: #c89b19;
+    }
+    .button:disabled {
+      background-color: #5c5c5c;
+      cursor: not-allowed;
+      opacity: 0.7;
     }
     .cached-content {
       margin-top: 2rem;
@@ -66,7 +80,7 @@
       font-size: 0.875rem;
     }
     .cached-content a {
-      color: #DBA11C;
+      color: var(--travel-gold);
       text-decoration: none;
     }
     .cached-content a:hover {
@@ -86,100 +100,202 @@
       padding: 0.5rem 1rem;
       border-radius: 0.25rem;
     }
+    .network-status {
+      position: fixed;
+      top: 1rem;
+      right: 1rem;
+      padding: 0.5rem 1rem;
+      border-radius: 0.25rem;
+      font-size: 0.875rem;
+      font-weight: 500;
+      background-color: #c62828;
+      color: white;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .status-indicator {
+      width: 0.75rem;
+      height: 0.75rem;
+      border-radius: 50%;
+      background-color: #c62828;
+    }
+    .online .status-indicator {
+      background-color: #4caf50;
+    }
+    .online {
+      background-color: #1b5e20;
+    }
+    .loading {
+      display: inline-block;
+      width: 1.5rem;
+      height: 1.5rem;
+      border: 3px solid rgba(255, 255, 255, 0.3);
+      border-radius: 50%;
+      border-top-color: #fff;
+      animation: spin 1s ease-in-out infinite;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
   </style>
 </head>
 <body>
+  <div class="network-status" id="networkStatus">
+    <span class="status-indicator"></span>
+    <span>Offline</span>
+  </div>
+  
   <div class="container">
-    <img src="/lovable-uploads/6c2cfdb5-e191-4f38-a35b-c5357e126036.png" alt="Seeta Narayan Travels Logo" class="logo">
+    <img src="/lovable-uploads/a3663b67-e938-40ec-b12d-77f0765c7bbb.png" alt="Seeta Narayan Travels Logo" class="logo">
     <h1>You're <span class="highlight">Offline</span></h1>
-    <p>It seems you've lost your internet connection. Please check your connection and try again. Some parts of the site may still work from cache.</p>
-    <a href="/" class="button">Try Again</a>
+    <p>It seems you've lost your internet connection. Some features might be limited, but you can still access previously loaded pages.</p>
+    <button id="tryAgainButton" class="button">
+      <span id="buttonText">Try Again</span>
+      <span id="loadingIndicator" class="loading" style="display: none;"></span>
+    </button>
     
     <div class="cached-content">
       <h2>Available Offline Content</h2>
       <p>You can still access these previously viewed pages:</p>
       <ul id="cachedPages" class="cached-list">
-        <li>Loading...</li>
+        <li>Loading cached pages...</li>
       </ul>
     </div>
   </div>
   <script>
+    // Network status monitoring
+    const networkStatus = document.getElementById('networkStatus');
+    const tryAgainButton = document.getElementById('tryAgainButton');
+    const buttonText = document.getElementById('buttonText');
+    const loadingIndicator = document.getElementById('loadingIndicator');
+    
+    function updateNetworkStatus() {
+      if (navigator.onLine) {
+        networkStatus.className = 'network-status online';
+        networkStatus.innerHTML = '<span class="status-indicator"></span><span>Online</span>';
+        setTimeout(() => {
+          window.location.href = '/';
+        }, 1500);
+      } else {
+        networkStatus.className = 'network-status';
+        networkStatus.innerHTML = '<span class="status-indicator"></span><span>Offline</span>';
+      }
+    }
+    
     // Listen for online status changes
-    window.addEventListener('online', () => {
-      window.location.reload();
+    window.addEventListener('online', updateNetworkStatus);
+    window.addEventListener('offline', updateNetworkStatus);
+    
+    // Initial check
+    updateNetworkStatus();
+    
+    tryAgainButton.addEventListener('click', function() {
+      buttonText.style.display = 'none';
+      loadingIndicator.style.display = 'inline-block';
+      tryAgainButton.disabled = true;
+      
+      fetch('/')
+        .then(response => {
+          if (response.ok) {
+            window.location.reload();
+          } else {
+            showError('Could not reconnect. Please try again later.');
+          }
+        })
+        .catch(() => {
+          showError('Still offline. Please check your internet connection.');
+        })
+        .finally(() => {
+          buttonText.style.display = 'inline-block';
+          loadingIndicator.style.display = 'none';
+          tryAgainButton.disabled = false;
+        });
     });
     
-    document.querySelector('.button').addEventListener('click', (e) => {
-      if (!navigator.onLine) {
-        e.preventDefault();
-        alert('You are still offline. Please check your internet connection.');
+    function showError(message) {
+      const errorElement = document.createElement('div');
+      errorElement.style.color = '#ff6b6b';
+      errorElement.style.marginTop = '0.5rem';
+      errorElement.textContent = message;
+      
+      const existingError = tryAgainButton.nextElementSibling;
+      if (existingError && existingError.style.color === '#ff6b6b') {
+        existingError.remove();
       }
-    });
+      
+      tryAgainButton.insertAdjacentElement('afterend', errorElement);
+      
+      setTimeout(() => {
+        errorElement.remove();
+      }, 3000);
+    }
     
     // Check for available cached resources
     if ('caches' in window) {
-      caches.open('seeta-narayan-cache-v2')
-        .then(cache => {
-          return cache.keys();
-        })
-        .then(requests => {
-          const cachedList = document.getElementById('cachedPages');
-          cachedList.innerHTML = '';
-          
-          const routes = new Set();
-          const baseUrl = window.location.origin;
-          
-          requests.forEach(request => {
-            if (request.url.includes(baseUrl) && 
-                !request.url.includes('.js') && 
-                !request.url.includes('.css') && 
-                !request.url.includes('.png') && 
-                !request.url.includes('.jpg') && 
-                !request.url.includes('.svg')) {
-              
-              const path = request.url.replace(baseUrl, '');
-              
-              if (path && path !== '/' && path !== '/offline.html') {
-                // Clean up path for display
-                let displayPath = path;
-                if (displayPath.endsWith('/')) {
-                  displayPath = displayPath.slice(0, -1);
-                }
-                
-                // Extract main routes only
-                const mainPath = '/' + displayPath.split('/')[1];
-                routes.add(mainPath);
+      Promise.all([
+        caches.open('seeta-narayan-cache-v3'),
+        caches.open('seeta-narayan-dynamic-v3')
+      ])
+      .then(([staticCache, dynamicCache]) => {
+        return Promise.all([
+          staticCache.keys(),
+          dynamicCache.keys()
+        ]);
+      })
+      .then(([staticRequests, dynamicRequests]) => {
+        const cachedList = document.getElementById('cachedPages');
+        cachedList.innerHTML = '';
+        
+        const routes = new Set();
+        const baseUrl = window.location.origin;
+        const allRequests = [...staticRequests, ...dynamicRequests];
+        
+        allRequests.forEach(request => {
+          if (request.url.includes(baseUrl) && 
+              !request.url.includes('.js') && 
+              !request.url.includes('.css') && 
+              !request.url.includes('.png') && 
+              !request.url.includes('.jpg') && 
+              !request.url.includes('.svg')) {
+            
+            const path = request.url.replace(baseUrl, '');
+            
+            if (path && path !== '/' && path !== '/offline.html') {
+              // Clean up path for display
+              let displayPath = path;
+              if (displayPath.endsWith('/')) {
+                displayPath = displayPath.slice(0, -1);
               }
+              
+              // Extract main routes only
+              const mainPath = '/' + displayPath.split('/')[1];
+              routes.add(mainPath);
             }
-          });
-          
-          // Common routes to check/display even if not in cache
-          const commonRoutes = ['/destinations', '/about', '/blog'];
-          commonRoutes.forEach(route => routes.add(route));
-          
-          if (routes.size > 0) {
-            routes.forEach(route => {
-              const li = document.createElement('li');
-              const a = document.createElement('a');
-              a.href = route;
-              a.textContent = route.charAt(1).toUpperCase() + route.slice(2);
-              a.onclick = (e) => {
-                if (!navigator.onLine) {
-                  // Allow the navigation to try from cache
-                  console.log('Attempting to load cached page:', route);
-                }
-              };
-              li.appendChild(a);
-              cachedList.appendChild(li);
-            });
-          } else {
-            cachedList.innerHTML = '<li>No cached pages available</li>';
           }
-        })
-        .catch(error => {
-          console.error('Error checking cache:', error);
-          document.getElementById('cachedPages').innerHTML = '<li>Error checking cache</li>';
         });
+        
+        // Common routes to check/display even if not in cache
+        const commonRoutes = ['/destinations', '/about', '/blog', '/contact'];
+        commonRoutes.forEach(route => routes.add(route));
+        
+        if (routes.size > 0) {
+          routes.forEach(route => {
+            const li = document.createElement('li');
+            const a = document.createElement('a');
+            a.href = route;
+            a.textContent = route.charAt(1).toUpperCase() + route.slice(2);
+            li.appendChild(a);
+            cachedList.appendChild(li);
+          });
+        } else {
+          cachedList.innerHTML = '<li>No cached pages available</li>';
+        }
+      })
+      .catch(error => {
+        console.error('Error checking cache:', error);
+        document.getElementById('cachedPages').innerHTML = '<li>Error checking cache</li>';
+      });
     }
   </script>
 </body>

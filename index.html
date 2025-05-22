@@ -13,23 +13,26 @@
     <meta property="og:title" content="Seeta Narayan Travels | Luxury Travel Agency" />
     <meta property="og:description" content="Discover handcrafted luxury travel experiences with Seeta Narayan Travels, your premium travel partner." />
     <meta property="og:type" content="website" />
-    <meta property="og:image" content="/lovable-uploads/6c2cfdb5-e191-4f38-a35b-c5357e126036.png" />
+    <meta property="og:image" content="/lovable-uploads/a3663b67-e938-40ec-b12d-77f0765c7bbb.png" />
 
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:site" content="@seetanarayantravels" />
-    <meta name="twitter:image" content="/lovable-uploads/6c2cfdb5-e191-4f38-a35b-c5357e126036.png" />
+    <meta name="twitter:image" content="/lovable-uploads/a3663b67-e938-40ec-b12d-77f0765c7bbb.png" />
     
     <!-- PWA Support -->
     <link rel="manifest" href="/manifest.json" />
-    <link rel="apple-touch-icon" href="/lovable-uploads/6c2cfdb5-e191-4f38-a35b-c5357e126036.png" />
+    <link rel="apple-touch-icon" href="/lovable-uploads/a3663b67-e938-40ec-b12d-77f0765c7bbb.png" />
     
     <!-- Favicon -->
-    <link rel="icon" type="image/png" href="/lovable-uploads/6c2cfdb5-e191-4f38-a35b-c5357e126036.png" />
+    <link rel="icon" type="image/png" href="/lovable-uploads/a3663b67-e938-40ec-b12d-77f0765c7bbb.png" />
     
     <!-- Preload Critical Resources -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="preload" href="/src/index.css" as="style" />
+    
+    <!-- Preload key images -->
+    <link rel="preload" href="/lovable-uploads/a3663b67-e938-40ec-b12d-77f0765c7bbb.png" as="image" />
   </head>
 
   <body>
@@ -38,16 +41,53 @@
     <script src="https://cdn.gpteng.co/gptengineer.js" type="module"></script>
     <script type="module" src="/src/main.tsx"></script>
     <script>
+      // Register service worker
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', function() {
           navigator.serviceWorker.register('/service-worker.js')
             .then(function(registration) {
               console.log('ServiceWorker registration successful with scope: ', registration.scope);
+              
+              // Set up a periodic check for updates
+              setInterval(() => {
+                registration.update();
+              }, 60 * 60 * 1000); // Check for updates every hour
+              
+              // Set up a communication channel with the service worker
+              const messageChannel = new MessageChannel();
+              messageChannel.port1.onmessage = event => {
+                if (event.data && event.data.type === 'CONNECTIVITY_CHANGE') {
+                  window.dispatchEvent(new CustomEvent('connectivity-change', {
+                    detail: { status: event.data.status }
+                  }));
+                }
+              };
+              
+              // Check connectivity status initially and periodically
+              if (registration.active) {
+                setInterval(() => {
+                  registration.active.postMessage({
+                    type: 'CHECK_CONNECTIVITY'
+                  }, [messageChannel.port2]);
+                }, 30000); // Check every 30 seconds
+              }
             }, function(err) {
               console.log('ServiceWorker registration failed: ', err);
             });
         });
       }
+      
+      // Track network status changes
+      const updateOnlineStatus = () => {
+        const status = navigator.onLine ? 'online' : 'offline';
+        const event = new CustomEvent('connectivity-change', {
+          detail: { status }
+        });
+        window.dispatchEvent(event);
+      };
+      
+      window.addEventListener('online', updateOnlineStatus);
+      window.addEventListener('offline', updateOnlineStatus);
     </script>
     <style>
       .pwa-install-button {
@@ -87,6 +127,122 @@
       .offline-indicator.show {
         transform: translateY(0);
       }
+      
+      /* Disable buttons when offline */
+      .offline-disabled {
+        opacity: 0.6;
+        cursor: not-allowed !important;
+        pointer-events: none;
+      }
+      
+      /* Loading optimizations */
+      body {
+        opacity: 1;
+        transition: opacity 0.3s;
+      }
+      body.loading {
+        opacity: 0;
+      }
     </style>
+    <script>
+      // PWA Install Prompt Handler
+      let deferredPrompt;
+      const installButton = document.createElement('button');
+      installButton.className = 'pwa-install-button';
+      installButton.textContent = 'Install App';
+      installButton.style.display = 'none';
+
+      window.addEventListener('beforeinstallprompt', (e) => {
+        // Prevent Chrome 67 and earlier from automatically showing the prompt
+        e.preventDefault();
+        // Stash the event so it can be triggered later
+        deferredPrompt = e;
+        
+        // Update UI to notify the user they can add to home screen
+        installButton.style.display = 'block';
+        document.body.appendChild(installButton);
+      });
+
+      installButton.addEventListener('click', async () => {
+        if (!deferredPrompt) {
+          return;
+        }
+        
+        // Show the install prompt
+        deferredPrompt.prompt();
+        
+        // Wait for the user to respond to the prompt
+        const { outcome } = await deferredPrompt.userChoice;
+        console.log(`User response to the install prompt: ${outcome}`);
+        
+        // We've used the prompt, and can't use it again, discard it
+        deferredPrompt = null;
+        
+        // Hide the install button
+        installButton.style.display = 'none';
+      });
+
+      window.addEventListener('appinstalled', () => {
+        console.log('App was installed.');
+        installButton.style.display = 'none';
+      });
+      
+      // Add loading state to body to improve perceived performance
+      document.body.classList.add('loading');
+      window.addEventListener('DOMContentLoaded', () => {
+        setTimeout(() => {
+          document.body.classList.remove('loading');
+        }, 100);
+      });
+      
+      // Handle offline indicator based on custom events
+      window.addEventListener('connectivity-change', (event) => {
+        const offlineIndicator = document.getElementById('offline-indicator');
+        const isOffline = event.detail.status === 'offline';
+        
+        if (isOffline) {
+          if (!offlineIndicator) {
+            const indicator = document.createElement('div');
+            indicator.id = 'offline-indicator';
+            indicator.className = 'offline-indicator';
+            indicator.innerHTML = `
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="1" y1="1" x2="23" y2="23"></line>
+                <path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55"></path>
+                <path d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39"></path>
+                <path d="M10.71 5.05A16 16 0 0 1 22.58 9"></path>
+                <path d="M1.42 9a15.91 15.91 0 0 1 4.7-2.88"></path>
+                <path d="M8.53 16.11a6 6 0 0 1 6.95 0"></path>
+                <line x1="12" y1="20" x2="12.01" y2="20"></line>
+              </svg>
+              You're offline - limited functionality available
+            `;
+            document.body.appendChild(indicator);
+            
+            // Add show class with slight delay for animation
+            setTimeout(() => {
+              indicator.classList.add('show');
+            }, 100);
+            
+            // Disable interactive elements that require network
+            document.querySelectorAll('.requires-network').forEach(el => {
+              el.classList.add('offline-disabled');
+            });
+          }
+        } else {
+          if (offlineIndicator) {
+            offlineIndicator.classList.remove('show');
+            setTimeout(() => {
+              offlineIndicator.remove();
+            }, 300);
+            
+            // Re-enable interactive elements
+            document.querySelectorAll('.requires-network').forEach(el => {
+              el.classList.remove('offline-disabled');
+            });
+          }
+        }
+      });
+    </script>
   </body>
 </html>

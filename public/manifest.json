@@ -9,17 +9,17 @@
       "type": "image/x-icon"
     },
     {
-      "src": "/lovable-uploads/6c2cfdb5-e191-4f38-a35b-c5357e126036.png",
+      "src": "/lovable-uploads/a3663b67-e938-40ec-b12d-77f0765c7bbb.png",
       "type": "image/png",
       "sizes": "192x192"
     },
     {
-      "src": "/lovable-uploads/6c2cfdb5-e191-4f38-a35b-c5357e126036.png",
+      "src": "/lovable-uploads/a3663b67-e938-40ec-b12d-77f0765c7bbb.png",
       "type": "image/png",
       "sizes": "512x512"
     },
     {
-      "src": "/lovable-uploads/6c2cfdb5-e191-4f38-a35b-c5357e126036.png",
+      "src": "/lovable-uploads/a3663b67-e938-40ec-b12d-77f0765c7bbb.png",
       "type": "image/png",
       "sizes": "192x192",
       "purpose": "maskable"
@@ -32,7 +32,6 @@
   "orientation": "portrait",
   "description": "Luxury Travel Agency providing personalized travel experiences",
   "categories": ["travel", "lifestyle", "booking"],
-  "screenshots": [],
   "shortcuts": [
     {
       "name": "Destinations",

@@ -26,6 +26,15 @@ import AdminBookings from './pages/AdminBookings';
 import AdminLayout from './components/admin/AdminLayout';
 import ErrorBoundary from './components/ErrorBoundary';
 import { AuthProvider } from './contexts/AuthContext';
+import OfflineBanner from './components/OfflineBanner';
+import { Suspense, lazy } from 'react';
+
+// Define loading component
+const LoadingFallback = () => (
+  <div className="flex items-center justify-center min-h-screen">
+    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-travel-gold"></div>
+  </div>
+);
 
 function App() {
   return (
@@ -33,18 +42,27 @@ function App() {
       <ThemeProvider defaultTheme="light" storageKey="travel-theme">
         <BrowserRouter>
           <SecurityHeaders />
+          <OfflineBanner />
           <ErrorBoundary>
             <Routes>
               <Route path="/" element={<Layout><Outlet /></Layout>}>
                 <Route index element={<Home />} />
                 <Route path="about" element={<About />} />
                 <Route path="contact" element={<Contact />} />
-                <Route path="destinations" element={<Destinations />} />
+                <Route path="destinations" element={
+                  <Suspense fallback={<LoadingFallback />}>
+                    <Destinations />
+                  </Suspense>
+                } />
                 <Route path="destinations/:id" element={<DestinationDetail />} />
                 <Route path="book/:id" element={<BookingPage />} />
                 <Route path="booking/:id" element={<BookingPage />} />
                 <Route path="booking-success" element={<BookingSuccess />} />
-                <Route path="blog" element={<Blog />} />
+                <Route path="blog" element={
+                  <Suspense fallback={<LoadingFallback />}>
+                    <Blog />
+                  </Suspense>
+                } />
                 <Route path="blog/:id" element={<BlogPost />} />
                 <Route path="auth" element={
                   <PublicRoute redirectAuthenticatedTo="/">
