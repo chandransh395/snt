@@ -1,3 +1,4 @@
+
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App.tsx';
@@ -26,17 +27,61 @@ if ('Notification' in window) {
 }
 
 // Register service worker for PWA functionality
-if ('serviceWorker' in navigator && !window.location.host.includes('stackblitz')) {
+if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/service-worker.js')
       .then(registration => {
         console.info('ServiceWorker registration successful with scope: ', registration.scope);
+        
+        // Check for service worker updates
+        setInterval(() => {
+          registration.update();
+        }, 60 * 60 * 1000); // Check for updates every hour
       })
       .catch(error => {
         console.error('ServiceWorker registration failed: ', error);
       });
   });
 }
+
+// Add PWA install prompt
+let deferredPrompt;
+const installButton = document.createElement('button');
+installButton.style.display = 'none';
+installButton.className = 'pwa-install-button';
+installButton.textContent = 'Install App';
+
+window.addEventListener('beforeinstallprompt', (e) => {
+  // Prevent Chrome 67 and earlier from automatically showing the prompt
+  e.preventDefault();
+  // Stash the event so it can be triggered later.
+  deferredPrompt = e;
+  // Update UI to notify the user they can add to home screen
+  installButton.style.display = 'block';
+  
+  document.body.appendChild(installButton);
+});
+
+// Add install button functionality
+installButton.addEventListener('click', async () => {
+  if (deferredPrompt) {
+    // Show the install prompt
+    deferredPrompt.prompt();
+    // Wait for the user to respond to the prompt
+    const { outcome } = await deferredPrompt.userChoice;
+    console.log(`User response to the install prompt: ${outcome}`);
+    // We've used the prompt, and can't use it again, discard it
+    deferredPrompt = null;
+    // Hide the install button
+    installButton.style.display = 'none';
+  }
+});
+
+window.addEventListener('appinstalled', (evt) => {
+  console.log('App was installed.');
+  // Hide the install button
+  installButton.style.display = 'none';
+});
 
 // Add offline detection
 const updateOnlineStatus = () => {

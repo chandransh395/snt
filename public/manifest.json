@@ -1,3 +1,4 @@
+
 {
   "short_name": "Seeta Narayan",
   "name": "Seeta Narayan Travels",
@@ -8,17 +9,17 @@
       "type": "image/x-icon"
     },
     {
-      "src": "logo192.png",
+      "src": "/lovable-uploads/6c2cfdb5-e191-4f38-a35b-c5357e126036.png",
       "type": "image/png",
       "sizes": "192x192"
     },
     {
-      "src": "logo512.png",
+      "src": "/lovable-uploads/6c2cfdb5-e191-4f38-a35b-c5357e126036.png",
       "type": "image/png",
       "sizes": "512x512"
     },
     {
-      "src": "maskable_icon.png",
+      "src": "/lovable-uploads/6c2cfdb5-e191-4f38-a35b-c5357e126036.png",
       "type": "image/png",
       "sizes": "192x192",
       "purpose": "maskable"
@@ -27,7 +28,7 @@
   "start_url": "/",
   "display": "standalone",
   "theme_color": "#DBA11C",
-  "background_color": "#FFFFFF",
+  "background_color": "#000000",
   "orientation": "portrait",
   "description": "Luxury Travel Agency providing personalized travel experiences",
   "categories": ["travel", "lifestyle", "booking"],
