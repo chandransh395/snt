@@ -1,4 +1,3 @@
-
 const CACHE_NAME = 'seeta-narayan-cache-v2';
 const urlsToCache = [
   '/',
