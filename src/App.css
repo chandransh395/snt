@@ -43,6 +43,11 @@ body {
   max-width: 100vw;
 }
 
+/* Playful cursor */
+.playful-cursor {
+  mix-blend-mode: difference;
+}
+
 /* Optimized animation keyframes */
 @media (prefers-reduced-motion: reduce) {
   * {
@@ -51,6 +56,82 @@ body {
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+}
+
+/* Enhanced Animations */
+.animate-on-scroll {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.6s ease, transform 0.6s ease;
+}
+
+.fadeIn {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.slideUp {
+  animation: slideUp 0.5s ease forwards;
+}
+
+@keyframes slideUp {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.bounce {
+  animation: bounce 1s ease infinite;
+}
+
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+.pulse {
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+/* More playful animations */
+.hover-scale {
+  transition: transform 0.3s ease;
+}
+
+.hover-scale:hover {
+  transform: scale(1.05);
+}
+
+.hover-lift {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.hover-lift:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+}
+
+.hover-glow {
+  transition: box-shadow 0.3s ease;
+}
+
+.hover-glow:hover {
+  box-shadow: 0 0 15px rgba(219, 161, 28, 0.6);
+}
+
+/* Card animations */
+.card-tilt {
+  transform-style: preserve-3d;
+  transition: transform 0.3s ease;
+}
+
+.card-tilt:hover {
+  transform: perspective(1000px) rotateX(2deg) rotateY(-2deg);
 }
 
 /* Optimized content visibility classes */
@@ -67,6 +148,34 @@ img.lazy-load {
 
 img.lazy-load.loaded {
   opacity: 1;
+}
+
+/* Mobile optimizations */
+@media (max-width: 768px) {
+  .container {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+  
+  h1 {
+    font-size: 1.75rem !important;
+  }
+  
+  h2 {
+    font-size: 1.5rem !important;
+  }
+  
+  .mobile-p-4 {
+    padding: 1rem !important;
+  }
+  
+  .mobile-text-center {
+    text-align: center !important;
+  }
+  
+  .mobile-full-width {
+    width: 100% !important;
+  }
 }
 
 /* Offline indicator */
@@ -151,4 +260,39 @@ img.lazy-load.loaded {
   50% {
     opacity: 1;
   }
+}
+
+/* Playful background patterns */
+.bg-pattern-dots {
+  background-image: radial-gradient(rgba(219, 161, 28, 0.1) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+.bg-pattern-lines {
+  background-image: linear-gradient(rgba(219, 161, 28, 0.1) 1px, transparent 1px),
+                    linear-gradient(90deg, rgba(219, 161, 28, 0.1) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+/* Gradients */
+.bg-golden-gradient {
+  background: linear-gradient(to right, #dba11c, #f2c94c);
+}
+
+.text-gradient {
+  background: linear-gradient(90deg, #dba11c, #f2c94c);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  display: inline-block;
+}
+
+/* Button effects */
+button.btn-bounce:hover {
+  animation: small-bounce 0.4s ease;
+}
+
+@keyframes small-bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
 }

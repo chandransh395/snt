@@ -23,10 +23,12 @@ import AdminBlog from './pages/AdminBlog';
 import AdminDestinations from './pages/AdminDestinations';
 import AdminSettings from './pages/AdminSettings';
 import AdminBookings from './pages/AdminBookings';
+import AdminContactMessages from './pages/AdminContactMessages';
 import AdminLayout from './components/admin/AdminLayout';
 import ErrorBoundary from './components/ErrorBoundary';
 import { AuthProvider } from './contexts/AuthContext';
 import OfflineBanner from './components/OfflineBanner';
+import MyTrips from './pages/MyTrips';
 import { Suspense, lazy } from 'react';
 
 // Define loading component
@@ -64,6 +66,11 @@ function App() {
                   </Suspense>
                 } />
                 <Route path="blog/:id" element={<BlogPost />} />
+                <Route path="my-trips" element={
+                  <ProtectedRoute>
+                    <MyTrips />
+                  </ProtectedRoute>
+                } />
                 <Route path="auth" element={
                   <PublicRoute redirectAuthenticatedTo="/">
                     <Auth />
@@ -83,6 +90,7 @@ function App() {
                 <Route path="destinations" element={<AdminDestinations />} />
                 <Route path="settings" element={<AdminSettings />} />
                 <Route path="bookings" element={<AdminBookings />} />
+                <Route path="contact-messages" element={<AdminContactMessages />} />
                 <Route path="users" element={<AdminPanel />} />
               </Route>
             </Routes>

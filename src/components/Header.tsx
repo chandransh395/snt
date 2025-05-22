@@ -4,15 +4,27 @@ import { Link, useLocation } from "react-router-dom";
 import { ThemeToggle } from "./ThemeToggle";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
-import { LogOut, ShieldCheck } from "lucide-react";
+import { LogOut, ShieldCheck, Bookmark } from "lucide-react";
 import MobileNav from "./MobileNav";
 import { motion } from "framer-motion";
 import AdminNotificationCenter from "./admin/AdminNotificationCenter";
+import { useIsMobile } from "@/hooks/use-mobile";
+import {
+  NavigationMenu,
+  NavigationMenuContent,
+  NavigationMenuItem,
+  NavigationMenuLink,
+  NavigationMenuList,
+  NavigationMenuTrigger,
+  navigationMenuTriggerStyle,
+} from "@/components/ui/navigation-menu";
+import { cn } from "@/lib/utils";
 
 const Header = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const location = useLocation();
   const { user, isAdmin, signOut } = useAuth();
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -22,14 +34,26 @@ const Header = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  // Base navigation items
   const navItems = [
     { title: "Home", href: "/" },
     { title: "About", href: "/about" },
     { title: "Destinations", href: "/destinations" },
     { title: "Blog", href: "/blog" },
     { title: "Contact", href: "/contact" },
-    { title: "Admin", href: "/admin", isAdmin: true },
   ];
+  
+  // Add My Trips for logged in users
+  const userNavItems = user ? [
+    ...navItems,
+    { title: "My Trips", href: "/my-trips" }
+  ] : navItems;
+  
+  // Add Admin link for admins
+  const fullNavItems = isAdmin ? [
+    ...userNavItems,
+    { title: "Admin", href: "/admin", isAdmin: true },
+  ] : userNavItems;
 
   return (
     <header
@@ -54,8 +78,8 @@ const Header = () => {
         </motion.div>
 
         {/* Desktop Navigation */}
-        <nav className="hidden md:flex items-center space-x-10">
-          {navItems.filter(item => !item.isAdmin || isAdmin).map((item, index) => (
+        <nav className="hidden md:flex items-center space-x-6">
+          {fullNavItems.filter(item => !item.isAdmin || isAdmin).map((item, index) => (
             <motion.div
               key={item.title}
               initial={{ opacity: 0, y: -10 }}
@@ -77,10 +101,11 @@ const Header = () => {
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3, delay: 0.1 * navItems.length }}
+            className="flex items-center space-x-2"
           >
             {!user ? (
               <Link to="/auth">
-                <Button variant="outline" size="sm" className="border-travel-gold text-travel-gold hover:bg-travel-gold/10">
+                <Button variant="outline" size="sm" className="border-travel-gold text-travel-gold hover:bg-travel-gold/10 hover-scale">
                   Login
                 </Button>
               </Link>
@@ -89,12 +114,50 @@ const Header = () => {
                 {isAdmin && <AdminNotificationCenter />}
                 
                 {isAdmin && (
-                  <Link to="/admin">
-                    <Button variant="ghost" size="sm" className="px-2 text-travel-gold hover:bg-travel-gold/10">
-                      <ShieldCheck className="h-4 w-4 mr-1" />
-                      <span className="sr-only md:not-sr-only">Admin</span>
-                    </Button>
-                  </Link>
+                  <NavigationMenu>
+                    <NavigationMenuList>
+                      <NavigationMenuItem>
+                        <NavigationMenuTrigger className="text-travel-gold hover:bg-travel-gold/10">
+                          <ShieldCheck className="h-4 w-4 mr-1" />
+                          <span className="sr-only md:not-sr-only">Admin</span>
+                        </NavigationMenuTrigger>
+                        <NavigationMenuContent>
+                          <ul className="grid w-[200px] gap-3 p-4">
+                            <li>
+                              <NavigationMenuLink asChild>
+                                <Link 
+                                  to="/admin"
+                                  className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
+                                >
+                                  <div className="text-sm font-medium leading-none">Dashboard</div>
+                                </Link>
+                              </NavigationMenuLink>
+                            </li>
+                            <li>
+                              <NavigationMenuLink asChild>
+                                <Link 
+                                  to="/admin/contact-messages"
+                                  className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
+                                >
+                                  <div className="text-sm font-medium leading-none">Contact Messages</div>
+                                </Link>
+                              </NavigationMenuLink>
+                            </li>
+                            <li>
+                              <NavigationMenuLink asChild>
+                                <Link 
+                                  to="/admin/bookings"
+                                  className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
+                                >
+                                  <div className="text-sm font-medium leading-none">Bookings</div>
+                                </Link>
+                              </NavigationMenuLink>
+                            </li>
+                          </ul>
+                        </NavigationMenuContent>
+                      </NavigationMenuItem>
+                    </NavigationMenuList>
+                  </NavigationMenu>
                 )}
                 <Button 
                   variant="ghost" 
@@ -122,7 +185,7 @@ const Header = () => {
         <div className="flex items-center md:hidden space-x-3">
           {isAdmin && user && <AdminNotificationCenter />}
           <ThemeToggle />
-          <MobileNav navLinks={navItems} />
+          <MobileNav navLinks={fullNavItems} />
         </div>
       </div>
     </header>
