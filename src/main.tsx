@@ -26,6 +26,19 @@ if ('Notification' in window) {
   });
 }
 
+// Define types for our custom events
+interface AppConnectivityEvent extends CustomEvent {
+  detail: {
+    isOnline: boolean;
+  };
+}
+
+interface ConnectivityChangeEvent extends CustomEvent {
+  detail: {
+    status: 'online' | 'offline';
+  };
+}
+
 // Create a custom offline manager
 const OfflineManager = {
   init() {
@@ -36,7 +49,8 @@ const OfflineManager = {
   setupListeners() {
     // Listen to the custom events from service worker
     window.addEventListener('connectivity-change', (event) => {
-      const { status } = event.detail;
+      const customEvent = event as ConnectivityChangeEvent;
+      const { status } = customEvent.detail;
       console.log('Connectivity status:', status);
       
       // Dispatch a custom event that components can listen for
@@ -91,6 +105,23 @@ window.addEventListener('DOMContentLoaded', () => {
   OfflineManager.init();
 });
 
+// Define interface for layout shift entries
+interface LayoutShiftEntry extends PerformanceEntry {
+  value: number;
+}
+
+// Define interface for largest contentful paint entries
+interface LargestContentfulPaintEntry extends PerformanceEntry {
+  renderTime: number;
+  loadTime: number;
+}
+
+// Define interface for first input delay entries
+interface FirstInputEntry extends PerformanceEntry {
+  processingStart: number;
+  startTime: number;
+}
+
 // Add performance monitoring
 const performanceObserver = () => {
   if ('PerformanceObserver' in window) {
@@ -110,9 +141,9 @@ const performanceObserver = () => {
       if ('layout-shift' in PerformanceObserver.supportedEntryTypes) {
         const layoutShiftObserver = new PerformanceObserver((list) => {
           list.getEntries().forEach((entry) => {
-            // @ts-ignore - LayoutShift is not in TypeScript yet
-            if (entry.value > 0.1) {
-              console.warn(`Large layout shift detected: ${entry.value.toFixed(4)}`, entry);
+            const layoutShiftEntry = entry as LayoutShiftEntry;
+            if (layoutShiftEntry.value > 0.1) {
+              console.warn(`Large layout shift detected: ${layoutShiftEntry.value.toFixed(4)}`, entry);
             }
           });
         });
@@ -123,8 +154,7 @@ const performanceObserver = () => {
       if ('largest-contentful-paint' in PerformanceObserver.supportedEntryTypes) {
         const lcpObserver = new PerformanceObserver((list) => {
           const entries = list.getEntries();
-          const lastEntry = entries[entries.length - 1];
-          // @ts-ignore - LargestContentfulPaint is not in TypeScript yet
+          const lastEntry = entries[entries.length - 1] as LargestContentfulPaintEntry;
           console.log(`Largest Contentful Paint: ${lastEntry.renderTime || lastEntry.loadTime}ms`);
         });
         lcpObserver.observe({ entryTypes: ['largest-contentful-paint'], buffered: true });
@@ -134,8 +164,8 @@ const performanceObserver = () => {
       if ('first-input' in PerformanceObserver.supportedEntryTypes) {
         const fidObserver = new PerformanceObserver((list) => {
           list.getEntries().forEach((entry) => {
-            // @ts-ignore - FirstInputDelay is not in TypeScript yet
-            const delay = entry.processingStart - entry.startTime;
+            const fidEntry = entry as FirstInputEntry;
+            const delay = fidEntry.processingStart - fidEntry.startTime;
             console.log(`First Input Delay: ${delay.toFixed(2)}ms`);
           });
         });

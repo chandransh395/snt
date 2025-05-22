@@ -1,12 +1,19 @@
 
 import { useState, useEffect } from 'react';
 
+// Define the custom app connectivity event type
+interface AppConnectivityEvent extends CustomEvent {
+  detail: {
+    isOnline: boolean;
+  };
+}
+
 export function useOfflineStatus() {
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
 
   useEffect(() => {
     function handleConnectivityChange(event: Event) {
-      const customEvent = event as CustomEvent;
+      const customEvent = event as AppConnectivityEvent;
       setIsOffline(!(customEvent.detail?.isOnline ?? navigator.onLine));
     }
 
