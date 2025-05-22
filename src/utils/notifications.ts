@@ -11,6 +11,18 @@ export interface BookingNotification {
   viewed: boolean;
 }
 
+export interface AdminLoginNotification {
+  id: string;
+  user_id: string; 
+  email: string;
+  ip_address: string;
+  user_agent: string;
+  created_at: string;
+  viewed: boolean;
+}
+
+export type AdminNotification = BookingNotification | AdminLoginNotification;
+
 export async function sendBookingNotification(bookingId: string, destinationName: string, travelerName: string) {
   try {
     // First, let's check if the notifications table exists
@@ -43,7 +55,8 @@ export async function sendBookingNotification(bookingId: string, destinationName
       const notification = new Notification('New Booking Received', {
         body: `${travelerName} booked ${destinationName}`,
         icon: '/logo192.png',
-        badge: '/favicon.ico'
+        badge: '/favicon.ico',
+        vibrate: [100, 50, 100]
       });
       
       // Close notification after 5 seconds
@@ -55,7 +68,24 @@ export async function sendBookingNotification(bookingId: string, destinationName
   }
 }
 
-export async function getAdminNotifications(): Promise<BookingNotification[]> {
+export async function getAdminNotifications(): Promise<AdminNotification[]> {
+  try {
+    // Get all notifications from different sources
+    const bookingNotifications = await getBookingNotifications();
+    const loginNotifications = await getLoginNotifications();
+    
+    // Combine and sort all notifications by date
+    const allNotifications = [...bookingNotifications, ...loginNotifications]
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    
+    return allNotifications;
+  } catch (error) {
+    console.error('Error fetching notifications:', error);
+    return [];
+  }
+}
+
+async function getBookingNotifications(): Promise<BookingNotification[]> {
   try {
     // First, let's check if the notifications table exists
     const { error: checkError } = await supabase
@@ -77,19 +107,55 @@ export async function getAdminNotifications(): Promise<BookingNotification[]> {
     
     return data as BookingNotification[];
   } catch (error) {
-    console.error('Error fetching notifications:', error);
+    console.error('Error fetching booking notifications:', error);
+    return [];
+  }
+}
+
+async function getLoginNotifications(): Promise<AdminLoginNotification[]> {
+  try {
+    // First, let's check if the login logs table exists
+    const { error: checkError } = await supabase
+      .from('admin_login_logs')
+      .select('id')
+      .limit(1);
+      
+    // If table doesn't exist, return empty array
+    if (checkError && checkError.code === 'PGRST116') {
+      return [];
+    }
+    
+    const { data, error } = await supabase
+      .from('admin_login_logs')
+      .select('*')
+      .order('created_at', { ascending: false });
+      
+    if (error) throw error;
+    
+    return data as AdminLoginNotification[];
+  } catch (error) {
+    console.error('Error fetching login notifications:', error);
     return [];
   }
 }
 
 export async function markNotificationAsViewed(notificationId: string) {
   try {
-    const { error } = await supabase
+    // Try to update in booking notifications
+    const { error: bookingError } = await supabase
       .from('admin_notifications')
       .update({ viewed: true })
       .eq('id', notificationId);
       
-    if (error) throw error;
+    // If no error or not found, try login logs
+    if (bookingError) {
+      const { error: loginError } = await supabase
+        .from('admin_login_logs')
+        .update({ viewed: true })
+        .eq('id', notificationId);
+        
+      if (loginError) throw loginError;
+    }
   } catch (error) {
     console.error('Error marking notification as viewed:', error);
   }
@@ -118,7 +184,8 @@ export function setupBookingNotifications() {
         const notification = new Notification('New Booking Received', {
           body: `${booking.traveler_name} booked ${booking.destination_name}`,
           icon: '/logo192.png',
-          badge: '/favicon.ico'
+          badge: '/favicon.ico',
+          vibrate: [100, 50, 100]
         });
         
         // Close after 5 seconds

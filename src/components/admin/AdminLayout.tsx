@@ -1,13 +1,23 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Link, Outlet, useLocation } from 'react-router-dom';
 import { ChartBar, Users, Settings, BookMarked, Edit, MapPin, Home } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import AdminNotificationCenter from './AdminNotificationCenter';
 
 const AdminLayout = () => {
   const location = useLocation();
   const path = location.pathname;
+  const { isAdmin } = useAuth();
+  
+  // Request notification permissions when admin panel is loaded
+  useEffect(() => {
+    if ('Notification' in window && Notification.permission !== 'granted' && Notification.permission !== 'denied') {
+      Notification.requestPermission();
+    }
+  }, []);
   
   const isActive = (route: string) => {
     if (route === '/admin' && path === '/admin') return true;
@@ -22,12 +32,15 @@ const AdminLayout = () => {
           <h1 className="text-3xl font-bold mb-2">Admin Dashboard</h1>
           <p className="text-muted-foreground">Manage your website content and settings</p>
         </div>
-        <Link to="/">
-          <Button variant="outline" className="flex items-center gap-2">
-            <Home className="h-4 w-4" />
-            <span>Return to Website</span>
-          </Button>
-        </Link>
+        <div className="flex items-center gap-2">
+          <AdminNotificationCenter />
+          <Link to="/">
+            <Button variant="outline" className="flex items-center gap-2">
+              <Home className="h-4 w-4" />
+              <span>Return to Website</span>
+            </Button>
+          </Link>
+        </div>
       </header>
       
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">

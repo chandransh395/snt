@@ -40,7 +40,54 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       
       const adminStatus = data?.is_admin || false;
       console.log("Admin status result:", adminStatus);
-      setIsAdmin(adminStatus);
+      
+      // If this is an admin login, create a notification
+      if (adminStatus) {
+        setIsAdmin(adminStatus);
+        
+        // Send admin login notification
+        try {
+          // First check if we can access the notifications table
+          const { error: checkError } = await supabase
+            .from('admin_notifications')
+            .select('id')
+            .limit(1);
+            
+          // If table exists, add an admin login notification
+          if (!checkError || checkError.code !== 'PGRST116') {
+            const email = user?.email || 'Unknown';
+            const ipRequest = await fetch('https://api.ipify.org?format=json')
+              .then(res => res.json())
+              .catch(() => ({ ip: 'Unknown IP' }));
+            
+            const ip = ipRequest?.ip || 'Unknown IP';
+              
+            await supabase
+              .from('admin_login_logs')
+              .insert({
+                user_id: userId,
+                email: email,
+                ip_address: ip,
+                user_agent: navigator.userAgent
+              });
+              
+            // Also show a browser notification for other admins
+            if ('Notification' in window && Notification.permission === 'granted') {
+              const notification = new Notification('Admin Login', {
+                body: `Admin user ${email} logged in from ${ip}`,
+                icon: '/logo192.png'
+              });
+                
+              // Close after 5 seconds
+              setTimeout(() => notification.close(), 5000);
+            }
+          }
+        } catch (error) {
+          console.error('Error logging admin login:', error);
+        }
+      } else {
+        setIsAdmin(adminStatus);
+      }
     } catch (error) {
       console.error('Error checking admin status:', error);
       setIsAdmin(false);

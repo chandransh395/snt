@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { LogOut, ShieldCheck } from "lucide-react";
 import MobileNav from "./MobileNav";
 import { motion } from "framer-motion";
+import AdminNotificationCenter from "./admin/AdminNotificationCenter";
 
 const Header = () => {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -85,6 +86,8 @@ const Header = () => {
               </Link>
             ) : (
               <div className="flex items-center space-x-2">
+                {isAdmin && <AdminNotificationCenter />}
+                
                 {isAdmin && (
                   <Link to="/admin">
                     <Button variant="ghost" size="sm" className="px-2 text-travel-gold hover:bg-travel-gold/10">
@@ -117,6 +120,7 @@ const Header = () => {
 
         {/* Mobile Navigation */}
         <div className="flex items-center md:hidden space-x-3">
+          {isAdmin && user && <AdminNotificationCenter />}
           <ThemeToggle />
           <MobileNav navLinks={navItems} />
         </div>
