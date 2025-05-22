@@ -55,8 +55,7 @@ export async function sendBookingNotification(bookingId: string, destinationName
       const notification = new Notification('New Booking Received', {
         body: `${travelerName} booked ${destinationName}`,
         icon: '/logo192.png',
-        badge: '/favicon.ico',
-        vibrate: [100, 50, 100]
+        badge: '/favicon.ico'
       });
       
       // Close notification after 5 seconds
@@ -184,8 +183,7 @@ export function setupBookingNotifications() {
         const notification = new Notification('New Booking Received', {
           body: `${booking.traveler_name} booked ${booking.destination_name}`,
           icon: '/logo192.png',
-          badge: '/favicon.ico',
-          vibrate: [100, 50, 100]
+          badge: '/favicon.ico'
         });
         
         // Close after 5 seconds
@@ -225,5 +223,14 @@ export function registerServiceWorker() {
           console.error('ServiceWorker registration failed: ', error);
         });
     });
+  }
+}
+
+// Add a function to trigger vibration on mobile devices (safely)
+export function triggerMobileNotification() {
+  // Check if vibration API is available and use it
+  if ('vibrate' in navigator) {
+    // Vibrate pattern: 100ms vibration, 50ms pause, 100ms vibration
+    navigator.vibrate([100, 50, 100]);
   }
 }

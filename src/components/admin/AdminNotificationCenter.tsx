@@ -11,7 +11,13 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from '@/components/ui/button';
-import { BookingNotification, getAdminNotifications, markNotificationAsViewed } from '@/utils/notifications';
+import { 
+  AdminNotification, 
+  BookingNotification, 
+  AdminLoginNotification,
+  getAdminNotifications, 
+  markNotificationAsViewed 
+} from '@/utils/notifications';
 import { useAuth } from '@/contexts/AuthContext';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
@@ -19,7 +25,7 @@ import { formatDistanceToNow } from 'date-fns';
 
 const AdminNotificationCenter = () => {
   const { isAdmin } = useAuth();
-  const [notifications, setNotifications] = useState<BookingNotification[]>([]);
+  const [notifications, setNotifications] = useState<AdminNotification[]>([]);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
   
@@ -72,6 +78,15 @@ const AdminNotificationCenter = () => {
   };
   
   if (!isAdmin) return null;
+
+  // Helper function to determine notification type
+  const isBookingNotification = (notification: AdminNotification): notification is BookingNotification => {
+    return 'destination_name' in notification;
+  };
+  
+  const isLoginNotification = (notification: AdminNotification): notification is AdminLoginNotification => {
+    return 'email' in notification;
+  };
   
   return (
     <DropdownMenu open={open} onOpenChange={setOpen}>
@@ -116,15 +131,37 @@ const AdminNotificationCenter = () => {
                 "flex flex-col items-start p-3 cursor-default",
                 !notification.viewed && "bg-muted/50"
               )}>
-                <div className="flex w-full justify-between">
-                  <span className="font-medium">New Booking</span>
-                  <span className="text-xs text-muted-foreground">
-                    {formatDistanceToNow(new Date(notification.created_at), { addSuffix: true })}
-                  </span>
-                </div>
-                <p className="mt-1 text-sm">
-                  {notification.traveler_name} booked {notification.destination_name}
-                </p>
+                {isBookingNotification(notification) && (
+                  <>
+                    <div className="flex w-full justify-between">
+                      <span className="font-medium">New Booking</span>
+                      <span className="text-xs text-muted-foreground">
+                        {formatDistanceToNow(new Date(notification.created_at), { addSuffix: true })}
+                      </span>
+                    </div>
+                    <p className="mt-1 text-sm">
+                      {notification.traveler_name} booked {notification.destination_name}
+                    </p>
+                  </>
+                )}
+                
+                {isLoginNotification(notification) && (
+                  <>
+                    <div className="flex w-full justify-between">
+                      <span className="font-medium">Admin Login</span>
+                      <span className="text-xs text-muted-foreground">
+                        {formatDistanceToNow(new Date(notification.created_at), { addSuffix: true })}
+                      </span>
+                    </div>
+                    <p className="mt-1 text-sm">
+                      {notification.email} logged in
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {notification.ip_address}
+                    </p>
+                  </>
+                )}
+                
                 {!notification.viewed && (
                   <Button 
                     variant="ghost" 
