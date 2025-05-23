@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { ThemeToggle } from "./ThemeToggle";
@@ -13,6 +12,7 @@ import {
   NavigationMenu,
   NavigationMenuContent,
   NavigationMenuItem,
+  NavigationMenuLink,
   NavigationMenuList,
   NavigationMenuTrigger,
   navigationMenuTriggerStyle,
@@ -130,34 +130,28 @@ const Header = () => {
                         <NavigationMenuContent>
                           <ul className="grid w-[200px] gap-3 p-4">
                             <li>
-                              <NavigationMenuLink asChild>
-                                <Link 
-                                  to="/admin"
-                                  className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
-                                >
-                                  <div className="text-sm font-medium leading-none">Dashboard</div>
-                                </Link>
-                              </NavigationMenuLink>
+                              <Link 
+                                to="/admin"
+                                className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
+                              >
+                                <div className="text-sm font-medium leading-none">Dashboard</div>
+                              </Link>
                             </li>
                             <li>
-                              <NavigationMenuLink asChild>
-                                <Link 
-                                  to="/admin/contact-messages"
-                                  className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
-                                >
-                                  <div className="text-sm font-medium leading-none">Contact Messages</div>
-                                </Link>
-                              </NavigationMenuLink>
+                              <Link 
+                                to="/admin/contact-messages"
+                                className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
+                              >
+                                <div className="text-sm font-medium leading-none">Contact Messages</div>
+                              </Link>
                             </li>
                             <li>
-                              <NavigationMenuLink asChild>
-                                <Link 
-                                  to="/admin/bookings"
-                                  className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
-                                >
-                                  <div className="text-sm font-medium leading-none">Bookings</div>
-                                </Link>
-                              </NavigationMenuLink>
+                              <Link 
+                                to="/admin/bookings"
+                                className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
+                              >
+                                <div className="text-sm font-medium leading-none">Bookings</div>
+                              </Link>
                             </li>
                           </ul>
                         </NavigationMenuContent>
