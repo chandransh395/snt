@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -203,17 +202,24 @@ const BlogEditor = () => {
     }
   };
   
-  const handleImageUploaded = (url: string) => {
-    setPost(prev => ({ ...prev, image: url }));
-    setShowImageUploader(false);
-    toast({
-      title: 'Image uploaded',
-      description: 'Cover image has been uploaded successfully'
-    });
+  const handleImagesUploaded = (urls: string[]) => {
+    if (urls.length > 0) {
+      setPost(prev => ({ ...prev, image: urls[0] }));
+      setShowImageUploader(false);
+      toast({
+        title: 'Image uploaded',
+        description: 'Cover image has been uploaded successfully'
+      });
+    }
   };
   
-  const insertImageInContent = (imageUrl: string) => {
-    const imageMarkdown = `![Image](${imageUrl})`;
+  const insertImagesInContent = (urls: string[]) => {
+    if (urls.length === 0) return;
+    
+    let imageMarkdown = '';
+    urls.forEach(url => {
+      imageMarkdown += `![Image](${url})\n\n`;
+    });
     
     // Get cursor position
     const textarea = document.getElementById('content') as HTMLTextAreaElement;
@@ -347,10 +353,13 @@ const BlogEditor = () => {
               <CardContent className="pt-6">
                 <h3 className="text-lg font-medium mb-4">Upload Image</h3>
                 <ImageUploader 
-                  onImageUploaded={insertImageInContent}
-                  onCancel={() => setShowImageUploader(false)}
-                  uploadingState={[uploadingImage, setUploadingImage]}
+                  onImagesUploaded={insertImagesInContent}
                 />
+                <div className="flex justify-end mt-4">
+                  <Button variant="outline" onClick={() => setShowImageUploader(false)}>
+                    Cancel
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           )}
