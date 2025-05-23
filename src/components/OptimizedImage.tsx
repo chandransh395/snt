@@ -1,5 +1,6 @@
 
 import { useState, useEffect } from 'react';
+import { CacheManager } from '@/utils/cache-manager';
 
 interface OptimizedImageProps {
   src: string;
@@ -25,19 +26,35 @@ const OptimizedImage = ({
   const [error, setError] = useState(false);
 
   useEffect(() => {
-    // Only lazy load if specified
-    if (loading === 'lazy' && !isLoaded) {
-      const img = new Image();
-      img.src = src;
-      img.onload = () => {
+    // Check if image is already cached
+    const checkCachedImage = async () => {
+      const cacheKey = `image-${src}`;
+      const cached = await CacheManager.get(cacheKey);
+      
+      if (cached && loading === 'lazy') {
         setImageSrc(src);
         setIsLoaded(true);
-      };
-      img.onerror = () => {
-        setImageSrc(placeholder);
-        setError(true);
-      };
-    }
+        return;
+      }
+
+      // Only lazy load if specified and not cached
+      if (loading === 'lazy' && !isLoaded) {
+        const img = new Image();
+        img.src = src;
+        img.onload = () => {
+          setImageSrc(src);
+          setIsLoaded(true);
+          // Cache successful load
+          CacheManager.set(cacheKey, true, 7 * 24 * 60 * 60 * 1000); // 7 days
+        };
+        img.onerror = () => {
+          setImageSrc(placeholder);
+          setError(true);
+        };
+      }
+    };
+
+    checkCachedImage();
   }, [src, loading, isLoaded, placeholder]);
 
   return (

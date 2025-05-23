@@ -1,6 +1,5 @@
-
-const CACHE_NAME = 'seeta-narayan-cache-v4';
-const DYNAMIC_CACHE = 'seeta-narayan-dynamic-v4';
+const CACHE_NAME = 'seeta-narayan-cache-v5';
+const DYNAMIC_CACHE = 'seeta-narayan-dynamic-v5';
 const urlsToCache = [
   '/',
   '/index.html',
@@ -9,7 +8,8 @@ const urlsToCache = [
   '/favicon.ico',
   '/logo192.png',
   '/logo512.png',
-  '/placeholder.svg'
+  '/placeholder.svg',
+  '/lovable-uploads/de74e9a8-b3db-4168-826f-b38d88c1951b.png'
 ];
 
 // Routes that should be cached for offline access
@@ -21,13 +21,20 @@ const OFFLINE_ROUTES = [
   '/contact'
 ];
 
-// Assets that should definitely be cached
+// Assets that should definitely be cached with versioning
 const STATIC_ASSETS = [
   '/src/index.css',
   '/src/App.css',
   '/lovable-uploads/6c2cfdb5-e191-4f38-a35b-c5357e126036.png',
-  '/lovable-uploads/a3663b67-e938-40ec-b12d-77f0765c7bbb.png'
+  '/lovable-uploads/de74e9a8-b3db-4168-826f-b38d88c1951b.png'
 ];
+
+// Cache duration settings (in milliseconds)
+const CACHE_DURATIONS = {
+  STATIC: 24 * 60 * 60 * 1000, // 24 hours for static assets
+  DYNAMIC: 12 * 60 * 60 * 1000, // 12 hours for dynamic content
+  API: 5 * 60 * 1000 // 5 minutes for API responses
+};
 
 // Error handling helper
 const handleError = (error, action) => {
@@ -57,25 +64,68 @@ const isNavigationRequest = (request) => {
 
 // Helper to check if this is a route we should handle offline
 const isOfflineRoute = (url) => {
-  // Extract the path from the URL
   const path = new URL(url).pathname;
-  
-  // Check if this path is in our offline routes
   return OFFLINE_ROUTES.some(route => {
-    // Check if the path is exactly the route or starts with the route followed by /
     return path === route || path.startsWith(`${route}/`);
   });
 };
 
-// Helper function to add to cache
-const addToCache = (cacheName, request, response) => {
+// Cache with timestamp for freshness checks
+const addToCache = (cacheName, request, response, duration = CACHE_DURATIONS.STATIC) => {
   if (response && response.ok) {
     const clone = response.clone();
+    const responseWithTimestamp = clone.blob().then(blob => {
+      const headers = new Headers(clone.headers);
+      headers.set('sw-cache-timestamp', Date.now().toString());
+      headers.set('sw-cache-duration', duration.toString());
+      return new Response(blob, {
+        status: clone.status,
+        statusText: clone.statusText,
+        headers: headers
+      });
+    });
+    
     caches.open(cacheName).then(cache => {
-      cache.put(request, clone);
+      responseWithTimestamp.then(timestampedResponse => {
+        cache.put(request, timestampedResponse);
+      });
     });
   }
   return response;
+};
+
+// Check if cached response is fresh
+const isCacheFresh = (cachedResponse) => {
+  const cacheTimestamp = cachedResponse.headers.get('sw-cache-timestamp');
+  const cacheDuration = cachedResponse.headers.get('sw-cache-duration');
+  
+  if (!cacheTimestamp || !cacheDuration) {
+    return false; // No timestamp, consider stale
+  }
+  
+  const age = Date.now() - parseInt(cacheTimestamp);
+  return age < parseInt(cacheDuration);
+};
+
+// Stale-while-revalidate strategy
+const staleWhileRevalidate = (request, cacheName, duration) => {
+  return caches.match(request).then(cachedResponse => {
+    const fetchPromise = fetch(request).then(networkResponse => {
+      return addToCache(cacheName, request, networkResponse, duration);
+    }).catch(() => cachedResponse);
+    
+    if (cachedResponse && isCacheFresh(cachedResponse)) {
+      // Return fresh cached response immediately
+      return cachedResponse;
+    } else if (cachedResponse) {
+      // Return stale cache but update in background
+      fetchPromise.catch(() => {}); // Silent background update
+      return cachedResponse;
+    } else {
+      // No cache, wait for network
+      return fetchPromise;
+    }
+  });
 };
 
 // Helper function to get the index.html for client-side routing
@@ -131,29 +181,25 @@ self.addEventListener('fetch', (event) => {
   const request = event.request;
   const url = new URL(request.url);
   
-  // Don't cache cross-origin requests to improve performance
+  // Don't cache cross-origin requests except for specific APIs
   if (url.origin !== self.location.origin) {
     if (!isApiRequest(request.url)) {
-      // For third-party assets, use network with cache fallback
       event.respondWith(
-        fetch(request)
-          .then(response => addToCache(DYNAMIC_CACHE, request, response))
-          .catch(() => caches.match(request))
+        staleWhileRevalidate(request, DYNAMIC_CACHE, CACHE_DURATIONS.DYNAMIC)
       );
     }
     return;
   }
 
-  // API Requests - Network only with offline fallback message
+  // API Requests - Cache with short duration
   if (isApiRequest(request.url)) {
     event.respondWith(
-      fetch(request)
+      staleWhileRevalidate(request, DYNAMIC_CACHE, CACHE_DURATIONS.API)
         .catch(() => {
           if (isNavigationRequest(request)) {
             return caches.match('/offline.html');
           }
           
-          // Return a simple JSON response for API requests
           return new Response(
             JSON.stringify({ 
               error: true, 
@@ -169,96 +215,32 @@ self.addEventListener('fetch', (event) => {
     return;
   }
   
-  // HTML Navigation Requests - Implement SPA/Offline support
+  // HTML Navigation Requests - Implement SPA/Offline support with caching
   if (isNavigationRequest(request)) {
     event.respondWith(
-      // First try to get the resource from the cache
-      caches.match(request)
-        .then(cachedResponse => {
-          if (cachedResponse) {
-            // If found in cache, return it and update cache in background
-            const updateCache = fetch(request)
-              .then(networkResponse => {
-                if (networkResponse && networkResponse.ok) {
-                  caches.open(CACHE_NAME).then(cache => {
-                    cache.put(request, networkResponse.clone());
-                  });
-                }
-              })
-              .catch(() => {});
-            
-            // Don't wait for the network update
-            event.waitUntil(updateCache);
-            return cachedResponse;
+      staleWhileRevalidate(request, CACHE_NAME, CACHE_DURATIONS.STATIC)
+        .catch(() => {
+          if (isOfflineRoute(request.url)) {
+            return getIndexHtmlFromCache();
           }
-          
-          // Not in cache - try network
-          return fetch(request)
-            .then(networkResponse => {
-              if (networkResponse && networkResponse.ok) {
-                const clonedResponse = networkResponse.clone();
-                caches.open(CACHE_NAME).then(cache => {
-                  cache.put(request, clonedResponse);
-                });
-                return networkResponse;
-              }
-              throw new Error('Network fetch failed');
-            })
-            .catch(() => {
-              // For SPA routes, serve the cached index.html for client-side routing
-              if (isOfflineRoute(request.url)) {
-                return getIndexHtmlFromCache();
-              }
-              
-              // Last resort - show offline page
-              return caches.match('/offline.html');
-            });
+          return caches.match('/offline.html');
         })
     );
     return;
   }
 
-  // Static Assets (JS, CSS, Images, Fonts) - Cache First, Then Network
+  // Static Assets - Cache first with background updates
   if (isStaticAsset(request.url)) {
     event.respondWith(
-      caches.match(request)
-        .then(cachedResponse => {
-          if (cachedResponse) {
-            // Return cached response and update cache in background
-            const updateCache = fetch(request)
-              .then(networkResponse => {
-                if (networkResponse && networkResponse.ok) {
-                  caches.open(CACHE_NAME).then(cache => {
-                    cache.put(request, networkResponse.clone());
-                  });
-                }
-              })
-              .catch(() => {});
-            
-            event.waitUntil(updateCache);
-            return cachedResponse;
-          }
-          
-          return fetch(request)
-            .then(networkResponse => {
-              if (networkResponse && networkResponse.ok) {
-                const clone = networkResponse.clone();
-                caches.open(CACHE_NAME).then(cache => {
-                  cache.put(request, clone);
-                });
-              }
-              return networkResponse;
-            })
-            .catch(() => caches.match('/placeholder.svg'));
-        })
+      staleWhileRevalidate(request, CACHE_NAME, CACHE_DURATIONS.STATIC)
+        .catch(() => caches.match('/placeholder.svg'))
     );
     return;
   }
   
-  // Default strategy for everything else - network first, then cache
+  // Default strategy - stale while revalidate
   event.respondWith(
-    fetch(request)
-      .then(response => addToCache(DYNAMIC_CACHE, request, response))
+    staleWhileRevalidate(request, DYNAMIC_CACHE, CACHE_DURATIONS.DYNAMIC)
       .catch(() => {
         return caches.match(request)
           .then(cachedResponse => {
@@ -275,7 +257,6 @@ self.addEventListener('message', (event) => {
     
     fetch('/ping.json?_=' + Date.now(), { cache: 'no-store' })
       .then(() => {
-        // Connected
         self.clients.get(clientId).then(client => {
           if (client) {
             client.postMessage({
@@ -286,7 +267,6 @@ self.addEventListener('message', (event) => {
         });
       })
       .catch(() => {
-        // Disconnected
         self.clients.get(clientId).then(client => {
           if (client) {
             client.postMessage({
