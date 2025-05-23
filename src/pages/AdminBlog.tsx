@@ -1,12 +1,14 @@
+
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from '@/hooks/use-toast';
 import { Loader2, Plus, Pencil, Trash2, Eye, EyeOff } from "lucide-react";
 import { fetchBlogStats, ensureBlogTablesExist, BlogStats } from '@/utils/admin-blog-stats';
+import BlogEditor from '@/components/admin/BlogEditor';
 
 const AdminBlog = () => {
   const navigate = useNavigate();
@@ -27,15 +29,21 @@ const AdminBlog = () => {
   const [filter, setFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
 
+  // Check if we're in edit/new post mode
+  const isEditing = location.pathname.includes('/edit/');
+  const isCreating = location.pathname.includes('/new');
+  
   // Initialize blog tables if needed
   useEffect(() => {
     ensureBlogTablesExist();
   }, []);
 
   useEffect(() => {
-    fetchPosts();
-    loadBlogStats();
-  }, [filter]);
+    if (!isEditing && !isCreating) {
+      fetchPosts();
+      loadBlogStats();
+    }
+  }, [filter, isEditing, isCreating]);
 
   const loadBlogStats = async () => {
     try {
@@ -157,6 +165,11 @@ const AdminBlog = () => {
     e.preventDefault();
     fetchPosts();
   };
+  
+  // Render the BlogEditor component when in edit or create mode
+  if (isEditing || isCreating) {
+    return <BlogEditor />;
+  }
 
   return (
     <div className="container mx-auto p-6">

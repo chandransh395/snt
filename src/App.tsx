@@ -87,6 +87,7 @@ function App() {
                 <Route index element={<AdminPanel />} />
                 <Route path="blog" element={<AdminBlog />} />
                 <Route path="blog/new" element={<AdminBlog />} />
+                <Route path="blog/edit/:id" element={<AdminBlog />} />
                 <Route path="destinations" element={<AdminDestinations />} />
                 <Route path="settings" element={<AdminSettings />} />
                 <Route path="bookings" element={<AdminBookings />} />

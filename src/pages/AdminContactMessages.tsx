@@ -21,7 +21,8 @@ import {
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 import {
   MessageSquare,
   Search,
@@ -42,60 +43,36 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs";
 
-// Mock contact message data
-const mockMessages = [
-  {
-    id: "1",
-    name: "John Smith",
-    email: "john.smith@example.com",
-    subject: "Booking Inquiry",
-    message: "Hi, I'm interested in booking a trip to Bali for my family of 4. Do you have any special packages available for next summer?",
-    created_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-    status: "new",
-    replies: []
-  },
-  {
-    id: "2",
-    name: "Sarah Johnson",
-    email: "sarah.j@example.com",
-    subject: "Cancellation Policy",
-    message: "I'd like to know more about your cancellation policy. If I need to cancel my trip due to an emergency, what are my options?",
-    created_at: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-    status: "replied",
-    replies: [
-      {
-        id: "r1",
-        admin_name: "Admin User",
-        message: "Hi Sarah, thank you for your inquiry. Our standard cancellation policy allows for full refunds if canceled 30 days before the trip date. For cancellations within 30 days, there's a graduated refund schedule. For emergencies, we do offer trip insurance that can be purchased at the time of booking. Please let me know if you need more specific information.",
-        created_at: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString()
-      }
-    ]
-  },
-  {
-    id: "3",
-    name: "Michael Wong",
-    email: "michael.w@example.com",
-    subject: "Special dietary requirements",
-    message: "Hello, I have some dietary restrictions (gluten-free and dairy-free). Can you accommodate these on your tour packages? I'm particularly interested in the European culinary tour.",
-    created_at: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
-    status: "replied",
-    replies: [
-      {
-        id: "r2",
-        admin_name: "Admin User",
-        message: "Hi Michael, we absolutely can accommodate your dietary restrictions. All of our tours, including the European Culinary Tour, can be adjusted for various dietary needs. We'll make note of your requirements and ensure that appropriate meals are prepared throughout your journey.",
-        created_at: new Date(Date.now() - 9 * 24 * 60 * 60 * 1000).toISOString()
-      }
-    ]
-  }
-];
+interface ContactMessage {
+  id: string;
+  name: string;
+  email: string;
+  subject: string;
+  message: string;
+  created_at: string;
+  status: string;
+  phone?: string;
+}
 
-type ContactMessage = typeof mockMessages[0];
+interface MessageReply {
+  id: string;
+  message_id: string;
+  admin_name: string;
+  message: string;
+  created_at: string;
+}
 
 const AdminContactMessages = () => {
   const { toast } = useToast();
   const [messages, setMessages] = useState<ContactMessage[]>([]);
+  const [replies, setReplies] = useState<{ [key: string]: MessageReply[] }>({});
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -103,45 +80,82 @@ const AdminContactMessages = () => {
   const [replyOpen, setReplyOpen] = useState(false);
   const [replyMessage, setReplyMessage] = useState("");
   const [replying, setReplying] = useState(false);
+  const [activeTab, setActiveTab] = useState("all");
   
   useEffect(() => {
-    // In a real application, you would fetch the messages from your backend
-    const fetchMessages = async () => {
-      setLoading(true);
-      try {
-        // Simulate API call
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        setMessages(mockMessages);
-      } catch (error) {
-        console.error("Failed to fetch contact messages:", error);
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: "Failed to load contact messages"
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
-    
     fetchMessages();
-  }, [toast]);
+  }, []);
   
-  // Filter messages based on search term and status filter
-  const filteredMessages = messages.filter(message => {
-    const matchesSearch = 
-      message.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      message.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      message.subject.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      message.message.toLowerCase().includes(searchTerm.toLowerCase());
+  const fetchMessages = async () => {
+    setLoading(true);
+    try {
+      // Fetch actual messages from the database
+      const { data: contactData, error: contactError } = await supabase
+        .from('contact_messages')
+        .select('*')
+        .order('created_at', { ascending: false });
+        
+      if (contactError) throw contactError;
       
-    const matchesStatus = statusFilter === "all" || message.status === statusFilter;
-    
-    return matchesSearch && matchesStatus;
-  });
+      // Fetch replies
+      const { data: repliesData, error: repliesError } = await supabase
+        .from('contact_replies')
+        .select('*')
+        .order('created_at', { ascending: true });
+        
+      if (repliesError) throw repliesError;
+      
+      // Group replies by message_id
+      const repliesByMessageId: { [key: string]: MessageReply[] } = {};
+      if (repliesData) {
+        repliesData.forEach((reply: MessageReply) => {
+          if (!repliesByMessageId[reply.message_id]) {
+            repliesByMessageId[reply.message_id] = [];
+          }
+          repliesByMessageId[reply.message_id].push(reply);
+        });
+      }
+      
+      setMessages(contactData || []);
+      setReplies(repliesByMessageId);
+      
+    } catch (error) {
+      console.error("Failed to fetch contact messages:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to load contact messages"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  // Filter messages based on search term, status filter, and active tab
+  const getFilteredMessages = () => {
+    return messages.filter(message => {
+      // Apply search filter
+      const matchesSearch = 
+        message.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        message.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        message.subject?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        message.message?.toLowerCase().includes(searchTerm.toLowerCase());
+      
+      // Apply status filter
+      const matchesStatus = statusFilter === "all" || message.status === statusFilter;
+      
+      // Apply tab filter
+      const matchesTab = 
+        activeTab === "all" || 
+        (activeTab === "replied" && message.status === "replied") || 
+        (activeTab === "unreplied" && message.status === "new");
+      
+      return matchesSearch && matchesStatus && matchesTab;
+    });
+  };
   
   // Sort messages by date (newest first)
-  const sortedMessages = [...filteredMessages].sort(
+  const sortedMessages = getFilteredMessages().sort(
     (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
   );
   
@@ -150,29 +164,48 @@ const AdminContactMessages = () => {
     
     setReplying(true);
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Get admin info
+      const { data: userData } = await supabase.auth.getUser();
+      const adminName = userData?.user?.email || "Admin";
       
-      // Add reply to the message
-      const reply = {
-        id: `r${Date.now()}`,
-        admin_name: "Admin User", // In a real app, use the logged-in admin's name
-        message: replyMessage,
-        created_at: new Date().toISOString()
-      };
+      // Add reply to the database
+      const { data: replyData, error: replyError } = await supabase
+        .from('contact_replies')
+        .insert({
+          message_id: selectedMessage.id,
+          admin_name: adminName,
+          message: replyMessage,
+        })
+        .select()
+        .single();
+        
+      if (replyError) throw replyError;
       
-      // Update the message with the new reply
+      // Update message status to replied
+      const { error: updateError } = await supabase
+        .from('contact_messages')
+        .update({ status: 'replied' })
+        .eq('id', selectedMessage.id);
+        
+      if (updateError) throw updateError;
+      
+      // Update local state
       setMessages(prevMessages => 
         prevMessages.map(msg => 
           msg.id === selectedMessage.id 
-            ? { 
-                ...msg, 
-                status: "replied", 
-                replies: [...msg.replies, reply] 
-              }
+            ? { ...msg, status: "replied" }
             : msg
         )
       );
+      
+      // Update replies
+      setReplies(prev => ({
+        ...prev,
+        [selectedMessage.id]: [
+          ...(prev[selectedMessage.id] || []),
+          replyData as MessageReply
+        ]
+      }));
       
       toast({
         title: "Reply Sent",
@@ -193,12 +226,53 @@ const AdminContactMessages = () => {
     }
   };
   
+  const handleMarkStatus = async (messageId: string, newStatus: string) => {
+    try {
+      const { error } = await supabase
+        .from('contact_messages')
+        .update({ status: newStatus })
+        .eq('id', messageId);
+        
+      if (error) throw error;
+      
+      // Update local state
+      setMessages(prevMessages => 
+        prevMessages.map(msg => 
+          msg.id === messageId
+            ? { ...msg, status: newStatus }
+            : msg
+        )
+      );
+      
+      toast({
+        title: "Status Updated",
+        description: `Message marked as ${newStatus}.`
+      });
+      
+    } catch (error) {
+      console.error("Failed to update status:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to update message status."
+      });
+    }
+  };
+  
   return (
     <div className="container mx-auto py-8 px-4">
       <header className="mb-8">
         <h1 className="text-3xl font-bold mb-2">Contact Messages</h1>
         <p className="text-muted-foreground">Manage and respond to customer inquiries</p>
       </header>
+      
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-6">
+        <TabsList>
+          <TabsTrigger value="all">All Messages</TabsTrigger>
+          <TabsTrigger value="unreplied">Unreplied</TabsTrigger>
+          <TabsTrigger value="replied">Replied</TabsTrigger>
+        </TabsList>
+      </Tabs>
       
       <div className="mb-6 flex flex-col sm:flex-row gap-4">
         <div className="relative flex-grow">
@@ -227,13 +301,7 @@ const AdminContactMessages = () => {
         
         <Button 
           variant="outline"
-          onClick={() => {
-            setLoading(true);
-            // Re-fetch messages (in a real app)
-            setTimeout(() => {
-              setLoading(false);
-            }, 800);
-          }}
+          onClick={fetchMessages}
           className="sm:w-auto"
         >
           <RefreshCw className="h-4 w-4 mr-2" />
@@ -251,7 +319,7 @@ const AdminContactMessages = () => {
             <MessageSquare className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
             <h2 className="text-2xl font-semibold mb-2">No messages found</h2>
             <p className="text-muted-foreground">
-              {searchTerm || statusFilter !== "all" 
+              {searchTerm || statusFilter !== "all" || activeTab !== "all"
                 ? "Try adjusting your search or filter criteria." 
                 : "There are no contact messages to display."}
             </p>
@@ -260,11 +328,11 @@ const AdminContactMessages = () => {
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {sortedMessages.map(message => (
-            <Card key={message.id} className="animate-fade-in overflow-hidden">
+            <Card key={message.id} className="overflow-hidden">
               <CardHeader className="pb-3">
                 <div className="flex justify-between items-start">
                   <div>
-                    <CardTitle>{message.subject}</CardTitle>
+                    <CardTitle>{message.subject || "No Subject"}</CardTitle>
                     <CardDescription className="flex items-center mt-1">
                       <User className="h-3.5 w-3.5 mr-1" />
                       {message.name}
@@ -290,6 +358,13 @@ const AdminContactMessages = () => {
                   </a>
                 </div>
                 
+                {message.phone && (
+                  <div className="flex items-center text-sm mb-2">
+                    <User className="h-4 w-4 mr-2 text-muted-foreground" />
+                    <span>{message.phone}</span>
+                  </div>
+                )}
+                
                 <div className="flex items-center text-sm text-muted-foreground mb-4">
                   <Calendar className="h-4 w-4 mr-2" />
                   {format(new Date(message.created_at), "MMM d, yyyy 'at' h:mm a")}
@@ -299,25 +374,30 @@ const AdminContactMessages = () => {
                   <p className="text-sm whitespace-pre-line">{message.message}</p>
                 </div>
                 
-                {message.replies.length > 0 && (
+                {replies[message.id] && replies[message.id].length > 0 && (
                   <div className="mt-4 pt-3 border-t">
                     <p className="text-sm font-medium flex items-center mb-2">
                       <CheckCircle2 className="h-4 w-4 mr-2 text-green-500" />
                       Your Response
                     </p>
                     <div className="bg-green-50 dark:bg-green-950/20 p-3 rounded-md">
-                      <p className="text-sm whitespace-pre-line">{message.replies[message.replies.length - 1].message}</p>
+                      <p className="text-sm whitespace-pre-line">
+                        {replies[message.id][replies[message.id].length - 1].message}
+                      </p>
                       <p className="text-xs text-muted-foreground mt-2">
-                        {format(new Date(message.replies[message.replies.length - 1].created_at), "MMM d, yyyy 'at' h:mm a")}
+                        {format(
+                          new Date(replies[message.id][replies[message.id].length - 1].created_at),
+                          "MMM d, yyyy 'at' h:mm a"
+                        )}
                       </p>
                     </div>
                   </div>
                 )}
               </CardContent>
               
-              <CardFooter>
+              <CardFooter className="flex flex-wrap gap-2">
                 <Button
-                  className="w-full bg-travel-gold hover:bg-amber-600 text-black"
+                  className="flex-1 bg-travel-gold hover:bg-amber-600 text-black"
                   onClick={() => {
                     setSelectedMessage(message);
                     setReplyOpen(true);
@@ -326,6 +406,26 @@ const AdminContactMessages = () => {
                   <MessageSquare className="h-4 w-4 mr-2" />
                   {message.status === 'new' ? 'Reply' : 'Send Another Reply'}
                 </Button>
+                
+                {message.status === 'new' ? (
+                  <Button
+                    variant="outline"
+                    className="flex-1"
+                    onClick={() => handleMarkStatus(message.id, 'replied')}
+                  >
+                    <CheckCircle2 className="h-4 w-4 mr-2" />
+                    Mark as Replied
+                  </Button>
+                ) : (
+                  <Button
+                    variant="outline"
+                    className="flex-1"
+                    onClick={() => handleMarkStatus(message.id, 'new')}
+                  >
+                    <Clock className="h-4 w-4 mr-2" />
+                    Mark as Unreplied
+                  </Button>
+                )}
               </CardFooter>
             </Card>
           ))}
