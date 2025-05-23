@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { ThemeToggle } from "./ThemeToggle";
@@ -19,7 +20,6 @@ import {
 } from "@/components/ui/navigation-menu";
 import { cn } from "@/lib/utils";
 
-// Define the NavItem type to properly include the optional isAdmin property
 type NavItem = {
   title: string;
   href: string;
@@ -49,7 +49,7 @@ const Header = () => {
     { title: "Contact", href: "/contact" },
   ];
   
-  // Add My Trips for logged in users
+  // Add My Trips for logged in users (only once)
   const userNavItems: NavItem[] = user ? [
     ...navItems,
     { title: "My Trips", href: "/my-trips" }

@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { 
   Menu, X, User, LogOut, Home, Info, Map, BookOpen, 
-  MessageSquare, ShieldCheck, Bookmark, Bell
+  MessageSquare, ShieldCheck, Bookmark
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
@@ -15,9 +15,7 @@ import {
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { useIsMobile } from "@/hooks/use-mobile";
 
-// Define the NavItem type to match the one in Header.tsx
 type NavItem = {
   title: string;
   href: string;
@@ -33,23 +31,28 @@ const MobileNav = ({ navLinks }: MobileNavProps) => {
   const [open, setOpen] = useState(false);
   const { user, isAdmin, signOut } = useAuth();
   const location = useLocation();
-  const isMobile = useIsMobile();
   
-  // Add My Trips link for logged in users
-  const enhancedNavLinks = [...navLinks];
+  // Remove duplicate "My Trips" entries and add only one if user is logged in
+  const uniqueNavLinks = [...navLinks];
   if (user) {
-    enhancedNavLinks.splice(enhancedNavLinks.length - (isAdmin ? 1 : 0), 0, {
+    // Remove any existing "My Trips" entries
+    const filteredLinks = uniqueNavLinks.filter(link => link.title !== "My Trips");
+    // Add single "My Trips" entry before admin links
+    const adminIndex = filteredLinks.findIndex(link => link.isAdmin);
+    const insertIndex = adminIndex !== -1 ? adminIndex : filteredLinks.length;
+    filteredLinks.splice(insertIndex, 0, {
       title: "My Trips",
       href: "/my-trips",
       icon: <Bookmark className="h-5 w-5 mr-3" />
     });
+    uniqueNavLinks.splice(0, uniqueNavLinks.length, ...filteredLinks);
   }
   
   // Map icons to navigation links
-  const navLinksWithIcons = enhancedNavLinks.map(link => {
-    let icon;
+  const navLinksWithIcons = uniqueNavLinks.map(link => {
+    if (link.icon) return link;
     
-    // Assign appropriate icon based on link title or href
+    let icon;
     switch(link.href) {
       case '/':
         icon = <Home className="h-5 w-5 mr-3" />;
@@ -66,9 +69,6 @@ const MobileNav = ({ navLinks }: MobileNavProps) => {
       case '/contact':
         icon = <MessageSquare className="h-5 w-5 mr-3" />;
         break;
-      case '/my-trips':
-        icon = <Bookmark className="h-5 w-5 mr-3" />;
-        break;
       case '/admin':
       case '/admin/destinations':
       case '/admin/blog':
@@ -78,13 +78,10 @@ const MobileNav = ({ navLinks }: MobileNavProps) => {
         icon = <ShieldCheck className="h-5 w-5 mr-3" />;
         break;
       default:
-        icon = link.icon || null;
+        icon = null;
     }
     
-    return {
-      ...link,
-      icon
-    };
+    return { ...link, icon };
   });
 
   return (
@@ -95,11 +92,19 @@ const MobileNav = ({ navLinks }: MobileNavProps) => {
           <span className="sr-only">Toggle menu</span>
         </Button>
       </SheetTrigger>
-      <SheetContent side="left" className="w-[280px] sm:w-[350px] flex flex-col bg-gradient-to-b from-background to-background/95 backdrop-blur-sm">
+      <SheetContent 
+        side="left" 
+        className="w-[280px] sm:w-[320px] flex flex-col bg-gradient-to-b from-background to-background/95 backdrop-blur-sm"
+      >
         <div className="flex items-center justify-between border-b pb-4">
           <div className="font-bold text-lg text-gradient">Navigation</div>
-          <Button variant="ghost" size="icon" onClick={() => setOpen(false)}>
-            <X className="h-5 w-5" />
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={() => setOpen(false)}
+            className="h-8 w-8"
+          >
+            <X className="h-4 w-4" />
             <span className="sr-only">Close</span>
           </Button>
         </div>
@@ -132,13 +137,15 @@ const MobileNav = ({ navLinks }: MobileNavProps) => {
           {user ? (
             <div className="space-y-4">
               <div className="flex items-center">
-                <Avatar className="h-10 w-10 mr-3 bg-travel-gold/20 border border-travel-gold/30">
-                  <AvatarFallback className="bg-travel-gold/20 text-travel-gold">
+                <Avatar className="h-10 w-10 mr-3 bg-travel-gold/20 border border-travel-gold/30 flex-shrink-0">
+                  <AvatarFallback className="bg-travel-gold/20 text-travel-gold text-sm">
                     {user.email?.substring(0, 2).toUpperCase() || "U"}
                   </AvatarFallback>
                 </Avatar>
-                <div>
-                  <p className="font-medium">{user.email}</p>
+                <div className="min-w-0 flex-1">
+                  <p className="font-medium text-sm truncate" title={user.email}>
+                    {user.email}
+                  </p>
                   {isAdmin && (
                     <span className="text-xs text-travel-gold">Admin</span>
                   )}

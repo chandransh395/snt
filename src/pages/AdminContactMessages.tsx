@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { 
   Card, 
@@ -34,7 +33,8 @@ import {
   Loader2,
   RefreshCw,
   Send,
-  Filter
+  Filter,
+  Phone
 } from "lucide-react";
 import {
   Select,
@@ -49,6 +49,7 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs";
+import { ensureContactTablesExist } from "@/utils/admin-contact-utils";
 
 interface ContactMessage {
   id: string;
@@ -83,123 +84,41 @@ const AdminContactMessages = () => {
   const [activeTab, setActiveTab] = useState("all");
   
   useEffect(() => {
-    ensureContactTablesExist();
-    fetchMessages();
+    initializeAndFetch();
   }, []);
   
-  // Ensure tables exist
-  const ensureContactTablesExist = async () => {
-    try {
-      // Check if contact_messages table exists
-      const { error } = await supabase
-        .from('contact_messages')
-        .select('id')
-        .limit(1);
-      
-      if (error && error.code === '42P01') {
-        console.log('Creating contact tables...');
-        
-        // Create contact_messages table
-        const { error: createMessagesError } = await supabase.rpc('create_contact_tables');
-        
-        if (createMessagesError) {
-          console.error('Error creating contact tables:', createMessagesError);
-        } else {
-          // Add sample data for testing
-          await addSampleContactMessages();
-        }
-      }
-    } catch (err) {
-      console.error('Error initializing contact tables:', err);
-    }
-  };
-  
-  // Add sample contact messages for testing
-  const addSampleContactMessages = async () => {
-    try {
-      const sampleMessages = [
-        {
-          name: 'John Smith',
-          email: 'john@example.com',
-          subject: 'Tour Package Inquiry',
-          message: 'Hello, I am interested in your European tour packages. Could you please provide more details about the itinerary and pricing for a family of 4? We are planning to travel in August.',
-          status: 'new',
-          created_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString()
-        },
-        {
-          name: 'Sarah Johnson',
-          email: 'sarah@example.com',
-          subject: 'Booking Confirmation',
-          message: 'I just completed a booking for the Thailand adventure tour but haven\'t received a confirmation email yet. Could you please verify my booking status? My reference number is TH-2023-45678.',
-          status: 'replied',
-          created_at: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString()
-        },
-        {
-          name: 'Michael Brown',
-          email: 'michael@example.com',
-          phone: '+1 555-123-4567',
-          subject: 'Special Requirements',
-          message: 'I have a booking for the Japan cultural tour next month. I need to inform you about some dietary restrictions. I am vegetarian and my wife has a gluten allergy. Could you please ensure that appropriate meals are arranged during our tour?',
-          status: 'new',
-          created_at: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString()
-        }
-      ];
-      
-      const { error } = await supabase
-        .from('contact_messages')
-        .insert(sampleMessages);
-        
-      if (error) {
-        console.error('Error adding sample messages:', error);
-      } else {
-        // Add a sample reply to Sarah's message
-        // First get Sarah's message id
-        const { data: sarahMessage } = await supabase
-          .from('contact_messages')
-          .select('id')
-          .eq('email', 'sarah@example.com')
-          .single();
-          
-        if (sarahMessage) {
-          const { error: replyError } = await supabase
-            .from('contact_replies')
-            .insert({
-              message_id: sarahMessage.id,
-              admin_name: 'Admin',
-              message: 'Hello Sarah, I have checked your booking and it is confirmed. You should receive the confirmation email shortly. Please let us know if you have any other questions.',
-              created_at: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString()
-            });
-            
-          if (replyError) {
-            console.error('Error adding sample reply:', replyError);
-          }
-        }
-      }
-    } catch (err) {
-      console.error('Error adding sample data:', err);
-    }
+  const initializeAndFetch = async () => {
+    await ensureContactTablesExist();
+    await fetchMessages();
   };
   
   const fetchMessages = async () => {
     setLoading(true);
     try {
-      // Fetch actual messages from the database
+      console.log('Fetching contact messages...');
+      
       const { data: contactData, error: contactError } = await supabase
         .from('contact_messages')
         .select('*')
         .order('created_at', { ascending: false });
         
-      if (contactError) throw contactError;
+      if (contactError) {
+        console.error('Contact fetch error:', contactError);
+        throw contactError;
+      }
       
-      // Fetch replies
+      console.log('Contact messages fetched:', contactData?.length || 0);
+      
       const { data: repliesData, error: repliesError } = await supabase
         .from('contact_replies')
         .select('*')
         .order('created_at', { ascending: true });
         
-      if (repliesError) throw repliesError;
+      if (repliesError) {
+        console.error('Replies fetch error:', repliesError);
+        throw repliesError;
+      }
       
-      // Group replies by message_id
       const repliesByMessageId: { [key: string]: MessageReply[] } = {};
       if (repliesData) {
         repliesData.forEach((reply: MessageReply) => {
@@ -225,20 +144,16 @@ const AdminContactMessages = () => {
     }
   };
   
-  // Filter messages based on search term, status filter, and active tab
   const getFilteredMessages = () => {
     return messages.filter(message => {
-      // Apply search filter
       const matchesSearch = 
         message.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         message.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         message.subject?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         message.message?.toLowerCase().includes(searchTerm.toLowerCase());
       
-      // Apply status filter
       const matchesStatus = statusFilter === "all" || message.status === statusFilter;
       
-      // Apply tab filter
       const matchesTab = 
         activeTab === "all" || 
         (activeTab === "replied" && message.status === "replied") || 
@@ -248,7 +163,6 @@ const AdminContactMessages = () => {
     });
   };
   
-  // Sort messages by date (newest first)
   const sortedMessages = getFilteredMessages().sort(
     (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
   );
@@ -258,11 +172,9 @@ const AdminContactMessages = () => {
     
     setReplying(true);
     try {
-      // Get admin info
       const { data: userData } = await supabase.auth.getUser();
       const adminName = userData?.user?.email || "Admin";
       
-      // Add reply to the database
       const { data: replyData, error: replyError } = await supabase
         .from('contact_replies')
         .insert({
@@ -275,7 +187,6 @@ const AdminContactMessages = () => {
         
       if (replyError) throw replyError;
       
-      // Update message status to replied
       const { error: updateError } = await supabase
         .from('contact_messages')
         .update({ status: 'replied' })
@@ -283,7 +194,6 @@ const AdminContactMessages = () => {
         
       if (updateError) throw updateError;
       
-      // Update local state
       setMessages(prevMessages => 
         prevMessages.map(msg => 
           msg.id === selectedMessage.id 
@@ -292,7 +202,6 @@ const AdminContactMessages = () => {
         )
       );
       
-      // Update replies
       setReplies(prev => ({
         ...prev,
         [selectedMessage.id]: [
@@ -329,7 +238,6 @@ const AdminContactMessages = () => {
         
       if (error) throw error;
       
-      // Update local state
       setMessages(prevMessages => 
         prevMessages.map(msg => 
           msg.id === messageId
@@ -362,12 +270,16 @@ const AdminContactMessages = () => {
       
       <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-6">
         <TabsList className="mb-6 w-full md:w-auto flex overflow-x-auto">
-          <TabsTrigger value="all" className="flex-1 md:flex-none">All Messages</TabsTrigger>
-          <TabsTrigger value="unreplied" className="flex-1 md:flex-none">Unreplied</TabsTrigger>
-          <TabsTrigger value="replied" className="flex-1 md:flex-none">Replied</TabsTrigger>
+          <TabsTrigger value="all" className="flex-1 md:flex-none">All Messages ({messages.length})</TabsTrigger>
+          <TabsTrigger value="unreplied" className="flex-1 md:flex-none">
+            Unreplied ({messages.filter(m => m.status === 'new').length})
+          </TabsTrigger>
+          <TabsTrigger value="replied" className="flex-1 md:flex-none">
+            Replied ({messages.filter(m => m.status === 'replied').length})
+          </TabsTrigger>
         </TabsList>
         
-        <TabsContent value="all">
+        <TabsContent value={activeTab}>
           <div className="mb-6 flex flex-col sm:flex-row gap-4">
             <div className="relative flex-grow">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -391,56 +303,6 @@ const AdminContactMessages = () => {
                   <SelectItem value="replied">Replied</SelectItem>
                 </SelectContent>
               </Select>
-            </div>
-            
-            <Button 
-              variant="outline"
-              onClick={fetchMessages}
-              className="sm:w-auto"
-            >
-              <RefreshCw className="h-4 w-4 mr-2" />
-              Refresh
-            </Button>
-          </div>
-          
-          {renderMessagesList()}
-        </TabsContent>
-        
-        <TabsContent value="unreplied">
-          <div className="mb-6 flex flex-col sm:flex-row gap-4">
-            <div className="relative flex-grow">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input 
-                placeholder="Search unreplied messages..." 
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-            
-            <Button 
-              variant="outline"
-              onClick={fetchMessages}
-              className="sm:w-auto"
-            >
-              <RefreshCw className="h-4 w-4 mr-2" />
-              Refresh
-            </Button>
-          </div>
-          
-          {renderMessagesList()}
-        </TabsContent>
-        
-        <TabsContent value="replied">
-          <div className="mb-6 flex flex-col sm:flex-row gap-4">
-            <div className="relative flex-grow">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input 
-                placeholder="Search replied messages..." 
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
             </div>
             
             <Button 
@@ -558,7 +420,7 @@ const AdminContactMessages = () => {
               
               {message.phone && (
                 <div className="flex items-center text-sm mb-2">
-                  <User className="h-4 w-4 mr-2 text-muted-foreground" />
+                  <Phone className="h-4 w-4 mr-2 text-muted-foreground" />
                   <span>{message.phone}</span>
                 </div>
               )}
