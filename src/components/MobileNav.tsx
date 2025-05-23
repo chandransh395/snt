@@ -17,13 +17,16 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useIsMobile } from "@/hooks/use-mobile";
 
+// Define the NavItem type to match the one in Header.tsx
+type NavItem = {
+  title: string;
+  href: string;
+  isAdmin?: boolean;
+  icon?: React.ReactNode;
+};
+
 interface MobileNavProps {
-  navLinks: Array<{
-    title: string;
-    href: string;
-    isAdmin?: boolean;
-    icon?: React.ReactNode;
-  }>;
+  navLinks: NavItem[];
 }
 
 const MobileNav = ({ navLinks }: MobileNavProps) => {

@@ -13,12 +13,18 @@ import {
   NavigationMenu,
   NavigationMenuContent,
   NavigationMenuItem,
-  NavigationMenuLink,
   NavigationMenuList,
   NavigationMenuTrigger,
   navigationMenuTriggerStyle,
 } from "@/components/ui/navigation-menu";
 import { cn } from "@/lib/utils";
+
+// Define the NavItem type to properly include the optional isAdmin property
+type NavItem = {
+  title: string;
+  href: string;
+  isAdmin?: boolean;
+};
 
 const Header = () => {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -35,7 +41,7 @@ const Header = () => {
   }, []);
 
   // Base navigation items
-  const navItems = [
+  const navItems: NavItem[] = [
     { title: "Home", href: "/" },
     { title: "About", href: "/about" },
     { title: "Destinations", href: "/destinations" },
@@ -44,13 +50,13 @@ const Header = () => {
   ];
   
   // Add My Trips for logged in users
-  const userNavItems = user ? [
+  const userNavItems: NavItem[] = user ? [
     ...navItems,
     { title: "My Trips", href: "/my-trips" }
   ] : navItems;
   
   // Add Admin link for admins
-  const fullNavItems = isAdmin ? [
+  const fullNavItems: NavItem[] = isAdmin ? [
     ...userNavItems,
     { title: "Admin", href: "/admin", isAdmin: true },
   ] : userNavItems;
