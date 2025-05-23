@@ -83,8 +83,102 @@ const AdminContactMessages = () => {
   const [activeTab, setActiveTab] = useState("all");
   
   useEffect(() => {
+    ensureContactTablesExist();
     fetchMessages();
   }, []);
+  
+  // Ensure tables exist
+  const ensureContactTablesExist = async () => {
+    try {
+      // Check if contact_messages table exists
+      const { error } = await supabase
+        .from('contact_messages')
+        .select('id')
+        .limit(1);
+      
+      if (error && error.code === '42P01') {
+        console.log('Creating contact tables...');
+        
+        // Create contact_messages table
+        const { error: createMessagesError } = await supabase.rpc('create_contact_tables');
+        
+        if (createMessagesError) {
+          console.error('Error creating contact tables:', createMessagesError);
+        } else {
+          // Add sample data for testing
+          await addSampleContactMessages();
+        }
+      }
+    } catch (err) {
+      console.error('Error initializing contact tables:', err);
+    }
+  };
+  
+  // Add sample contact messages for testing
+  const addSampleContactMessages = async () => {
+    try {
+      const sampleMessages = [
+        {
+          name: 'John Smith',
+          email: 'john@example.com',
+          subject: 'Tour Package Inquiry',
+          message: 'Hello, I am interested in your European tour packages. Could you please provide more details about the itinerary and pricing for a family of 4? We are planning to travel in August.',
+          status: 'new',
+          created_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString()
+        },
+        {
+          name: 'Sarah Johnson',
+          email: 'sarah@example.com',
+          subject: 'Booking Confirmation',
+          message: 'I just completed a booking for the Thailand adventure tour but haven\'t received a confirmation email yet. Could you please verify my booking status? My reference number is TH-2023-45678.',
+          status: 'replied',
+          created_at: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString()
+        },
+        {
+          name: 'Michael Brown',
+          email: 'michael@example.com',
+          phone: '+1 555-123-4567',
+          subject: 'Special Requirements',
+          message: 'I have a booking for the Japan cultural tour next month. I need to inform you about some dietary restrictions. I am vegetarian and my wife has a gluten allergy. Could you please ensure that appropriate meals are arranged during our tour?',
+          status: 'new',
+          created_at: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString()
+        }
+      ];
+      
+      const { error } = await supabase
+        .from('contact_messages')
+        .insert(sampleMessages);
+        
+      if (error) {
+        console.error('Error adding sample messages:', error);
+      } else {
+        // Add a sample reply to Sarah's message
+        // First get Sarah's message id
+        const { data: sarahMessage } = await supabase
+          .from('contact_messages')
+          .select('id')
+          .eq('email', 'sarah@example.com')
+          .single();
+          
+        if (sarahMessage) {
+          const { error: replyError } = await supabase
+            .from('contact_replies')
+            .insert({
+              message_id: sarahMessage.id,
+              admin_name: 'Admin',
+              message: 'Hello Sarah, I have checked your booking and it is confirmed. You should receive the confirmation email shortly. Please let us know if you have any other questions.',
+              created_at: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString()
+            });
+            
+          if (replyError) {
+            console.error('Error adding sample reply:', replyError);
+          }
+        }
+      }
+    } catch (err) {
+      console.error('Error adding sample data:', err);
+    }
+  };
   
   const fetchMessages = async () => {
     setLoading(true);
@@ -267,170 +361,101 @@ const AdminContactMessages = () => {
       </header>
       
       <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-6">
-        <TabsList>
-          <TabsTrigger value="all">All Messages</TabsTrigger>
-          <TabsTrigger value="unreplied">Unreplied</TabsTrigger>
-          <TabsTrigger value="replied">Replied</TabsTrigger>
+        <TabsList className="mb-6 w-full md:w-auto flex overflow-x-auto">
+          <TabsTrigger value="all" className="flex-1 md:flex-none">All Messages</TabsTrigger>
+          <TabsTrigger value="unreplied" className="flex-1 md:flex-none">Unreplied</TabsTrigger>
+          <TabsTrigger value="replied" className="flex-1 md:flex-none">Replied</TabsTrigger>
         </TabsList>
+        
+        <TabsContent value="all">
+          <div className="mb-6 flex flex-col sm:flex-row gap-4">
+            <div className="relative flex-grow">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input 
+                placeholder="Search messages..." 
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            
+            <div className="flex items-center gap-2 sm:w-48">
+              <Filter className="h-4 w-4 text-muted-foreground" />
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Filter by status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Messages</SelectItem>
+                  <SelectItem value="new">New</SelectItem>
+                  <SelectItem value="replied">Replied</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <Button 
+              variant="outline"
+              onClick={fetchMessages}
+              className="sm:w-auto"
+            >
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Refresh
+            </Button>
+          </div>
+          
+          {renderMessagesList()}
+        </TabsContent>
+        
+        <TabsContent value="unreplied">
+          <div className="mb-6 flex flex-col sm:flex-row gap-4">
+            <div className="relative flex-grow">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input 
+                placeholder="Search unreplied messages..." 
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            
+            <Button 
+              variant="outline"
+              onClick={fetchMessages}
+              className="sm:w-auto"
+            >
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Refresh
+            </Button>
+          </div>
+          
+          {renderMessagesList()}
+        </TabsContent>
+        
+        <TabsContent value="replied">
+          <div className="mb-6 flex flex-col sm:flex-row gap-4">
+            <div className="relative flex-grow">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input 
+                placeholder="Search replied messages..." 
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            
+            <Button 
+              variant="outline"
+              onClick={fetchMessages}
+              className="sm:w-auto"
+            >
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Refresh
+            </Button>
+          </div>
+          
+          {renderMessagesList()}
+        </TabsContent>
       </Tabs>
-      
-      <div className="mb-6 flex flex-col sm:flex-row gap-4">
-        <div className="relative flex-grow">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input 
-            placeholder="Search messages..." 
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
-          />
-        </div>
-        
-        <div className="flex items-center gap-2 sm:w-48">
-          <Filter className="h-4 w-4 text-muted-foreground" />
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger>
-              <SelectValue placeholder="Filter by status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Messages</SelectItem>
-              <SelectItem value="new">New</SelectItem>
-              <SelectItem value="replied">Replied</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        
-        <Button 
-          variant="outline"
-          onClick={fetchMessages}
-          className="sm:w-auto"
-        >
-          <RefreshCw className="h-4 w-4 mr-2" />
-          Refresh
-        </Button>
-      </div>
-      
-      {loading ? (
-        <div className="flex justify-center items-center py-20">
-          <Loader2 className="h-12 w-12 animate-spin text-travel-gold" />
-        </div>
-      ) : sortedMessages.length === 0 ? (
-        <Card className="text-center py-16 bg-muted/30">
-          <CardContent>
-            <MessageSquare className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-            <h2 className="text-2xl font-semibold mb-2">No messages found</h2>
-            <p className="text-muted-foreground">
-              {searchTerm || statusFilter !== "all" || activeTab !== "all"
-                ? "Try adjusting your search or filter criteria." 
-                : "There are no contact messages to display."}
-            </p>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {sortedMessages.map(message => (
-            <Card key={message.id} className="overflow-hidden">
-              <CardHeader className="pb-3">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <CardTitle>{message.subject || "No Subject"}</CardTitle>
-                    <CardDescription className="flex items-center mt-1">
-                      <User className="h-3.5 w-3.5 mr-1" />
-                      {message.name}
-                    </CardDescription>
-                  </div>
-                  <Badge 
-                    className={`${
-                      message.status === 'new'
-                        ? 'bg-blue-500 hover:bg-blue-600'
-                        : 'bg-green-500 hover:bg-green-600'
-                    }`}
-                  >
-                    {message.status === 'new' ? 'New' : 'Replied'}
-                  </Badge>
-                </div>
-              </CardHeader>
-              
-              <CardContent className="pb-3">
-                <div className="flex items-center text-sm mb-2">
-                  <Mail className="h-4 w-4 mr-2 text-muted-foreground" />
-                  <a href={`mailto:${message.email}`} className="text-travel-gold hover:underline">
-                    {message.email}
-                  </a>
-                </div>
-                
-                {message.phone && (
-                  <div className="flex items-center text-sm mb-2">
-                    <User className="h-4 w-4 mr-2 text-muted-foreground" />
-                    <span>{message.phone}</span>
-                  </div>
-                )}
-                
-                <div className="flex items-center text-sm text-muted-foreground mb-4">
-                  <Calendar className="h-4 w-4 mr-2" />
-                  {format(new Date(message.created_at), "MMM d, yyyy 'at' h:mm a")}
-                </div>
-                
-                <div className="bg-muted/40 p-3 rounded-md mb-3">
-                  <p className="text-sm whitespace-pre-line">{message.message}</p>
-                </div>
-                
-                {replies[message.id] && replies[message.id].length > 0 && (
-                  <div className="mt-4 pt-3 border-t">
-                    <p className="text-sm font-medium flex items-center mb-2">
-                      <CheckCircle2 className="h-4 w-4 mr-2 text-green-500" />
-                      Your Response
-                    </p>
-                    <div className="bg-green-50 dark:bg-green-950/20 p-3 rounded-md">
-                      <p className="text-sm whitespace-pre-line">
-                        {replies[message.id][replies[message.id].length - 1].message}
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-2">
-                        {format(
-                          new Date(replies[message.id][replies[message.id].length - 1].created_at),
-                          "MMM d, yyyy 'at' h:mm a"
-                        )}
-                      </p>
-                    </div>
-                  </div>
-                )}
-              </CardContent>
-              
-              <CardFooter className="flex flex-wrap gap-2">
-                <Button
-                  className="flex-1 bg-travel-gold hover:bg-amber-600 text-black"
-                  onClick={() => {
-                    setSelectedMessage(message);
-                    setReplyOpen(true);
-                  }}
-                >
-                  <MessageSquare className="h-4 w-4 mr-2" />
-                  {message.status === 'new' ? 'Reply' : 'Send Another Reply'}
-                </Button>
-                
-                {message.status === 'new' ? (
-                  <Button
-                    variant="outline"
-                    className="flex-1"
-                    onClick={() => handleMarkStatus(message.id, 'replied')}
-                  >
-                    <CheckCircle2 className="h-4 w-4 mr-2" />
-                    Mark as Replied
-                  </Button>
-                ) : (
-                  <Button
-                    variant="outline"
-                    className="flex-1"
-                    onClick={() => handleMarkStatus(message.id, 'new')}
-                  >
-                    <Clock className="h-4 w-4 mr-2" />
-                    Mark as Unreplied
-                  </Button>
-                )}
-              </CardFooter>
-            </Card>
-          ))}
-        </div>
-      )}
       
       {/* Reply Dialog */}
       <Dialog open={replyOpen} onOpenChange={setReplyOpen}>
@@ -472,6 +497,139 @@ const AdminContactMessages = () => {
       </Dialog>
     </div>
   );
+  
+  function renderMessagesList() {
+    if (loading) {
+      return (
+        <div className="flex justify-center items-center py-20">
+          <Loader2 className="h-12 w-12 animate-spin text-travel-gold" />
+        </div>
+      );
+    } 
+    
+    if (sortedMessages.length === 0) {
+      return (
+        <Card className="text-center py-16 bg-muted/30">
+          <CardContent>
+            <MessageSquare className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+            <h2 className="text-2xl font-semibold mb-2">No messages found</h2>
+            <p className="text-muted-foreground">
+              {searchTerm || statusFilter !== "all" || activeTab !== "all"
+                ? "Try adjusting your search or filter criteria." 
+                : "There are no contact messages to display."}
+            </p>
+          </CardContent>
+        </Card>
+      );
+    }
+    
+    return (
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {sortedMessages.map(message => (
+          <Card key={message.id} className="overflow-hidden">
+            <CardHeader className="pb-3">
+              <div className="flex justify-between items-start">
+                <div>
+                  <CardTitle>{message.subject || "No Subject"}</CardTitle>
+                  <CardDescription className="flex items-center mt-1">
+                    <User className="h-3.5 w-3.5 mr-1" />
+                    {message.name}
+                  </CardDescription>
+                </div>
+                <Badge 
+                  className={`${
+                    message.status === 'new'
+                      ? 'bg-blue-500 hover:bg-blue-600'
+                      : 'bg-green-500 hover:bg-green-600'
+                  }`}
+                >
+                  {message.status === 'new' ? 'New' : 'Replied'}
+                </Badge>
+              </div>
+            </CardHeader>
+            
+            <CardContent className="pb-3">
+              <div className="flex items-center text-sm mb-2">
+                <Mail className="h-4 w-4 mr-2 text-muted-foreground" />
+                <a href={`mailto:${message.email}`} className="text-travel-gold hover:underline">
+                  {message.email}
+                </a>
+              </div>
+              
+              {message.phone && (
+                <div className="flex items-center text-sm mb-2">
+                  <User className="h-4 w-4 mr-2 text-muted-foreground" />
+                  <span>{message.phone}</span>
+                </div>
+              )}
+              
+              <div className="flex items-center text-sm text-muted-foreground mb-4">
+                <Calendar className="h-4 w-4 mr-2" />
+                {format(new Date(message.created_at), "MMM d, yyyy 'at' h:mm a")}
+              </div>
+              
+              <div className="bg-muted/40 p-3 rounded-md mb-3">
+                <p className="text-sm whitespace-pre-line">{message.message}</p>
+              </div>
+              
+              {replies[message.id] && replies[message.id].length > 0 && (
+                <div className="mt-4 pt-3 border-t">
+                  <p className="text-sm font-medium flex items-center mb-2">
+                    <CheckCircle2 className="h-4 w-4 mr-2 text-green-500" />
+                    Your Response
+                  </p>
+                  <div className="bg-green-50 dark:bg-green-950/20 p-3 rounded-md">
+                    <p className="text-sm whitespace-pre-line">
+                      {replies[message.id][replies[message.id].length - 1].message}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      {format(
+                        new Date(replies[message.id][replies[message.id].length - 1].created_at),
+                        "MMM d, yyyy 'at' h:mm a"
+                      )}
+                    </p>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+            
+            <CardFooter className="flex flex-wrap gap-2">
+              <Button
+                className="flex-1 bg-travel-gold hover:bg-amber-600 text-black"
+                onClick={() => {
+                  setSelectedMessage(message);
+                  setReplyOpen(true);
+                }}
+              >
+                <MessageSquare className="h-4 w-4 mr-2" />
+                {message.status === 'new' ? 'Reply' : 'Send Another Reply'}
+              </Button>
+              
+              {message.status === 'new' ? (
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => handleMarkStatus(message.id, 'replied')}
+                >
+                  <CheckCircle2 className="h-4 w-4 mr-2" />
+                  Mark as Replied
+                </Button>
+              ) : (
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => handleMarkStatus(message.id, 'new')}
+                >
+                  <Clock className="h-4 w-4 mr-2" />
+                  Mark as Unreplied
+                </Button>
+              )}
+            </CardFooter>
+          </Card>
+        ))}
+      </div>
+    );
+  }
 };
 
 export default AdminContactMessages;

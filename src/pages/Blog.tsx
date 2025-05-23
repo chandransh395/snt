@@ -79,6 +79,7 @@ const Blog = () => {
       const { data, error } = await supabaseCustom
         .from('blog_posts')
         .select('*')
+        .eq('published', true) // Only select published posts
         .order('published_at', { ascending: false });
         
       if (error) throw error;

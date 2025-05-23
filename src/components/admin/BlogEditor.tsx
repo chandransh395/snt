@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -141,6 +142,9 @@ const BlogEditor = () => {
     setSaving(true);
     
     try {
+      // Ensure excerpt exists
+      const excerptToSave = post.excerpt || post.content.substring(0, 150) + '...';
+      
       if (isEditing) {
         // Update existing post
         const { error } = await supabase
@@ -148,7 +152,7 @@ const BlogEditor = () => {
           .update({
             title: post.title,
             content: post.content,
-            excerpt: post.excerpt || post.content.substring(0, 150) + '...',
+            excerpt: excerptToSave,
             author: post.author,
             image: post.image,
             published: post.published,
@@ -171,7 +175,7 @@ const BlogEditor = () => {
           .insert({
             title: post.title,
             content: post.content,
-            excerpt: post.excerpt || post.content.substring(0, 150) + '...',
+            excerpt: excerptToSave,
             author: post.author,
             image: post.image,
             published: post.published,
