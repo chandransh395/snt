@@ -39,18 +39,20 @@ export async function ensureContactTablesExist() {
 async function createContactTablesDirectly() {
   try {
     // Create contact_messages table
-    const { error: messagesError } = await supabase.query(`
-      CREATE TABLE IF NOT EXISTS contact_messages (
-        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-        name TEXT NOT NULL,
-        email TEXT NOT NULL,
-        subject TEXT,
-        message TEXT NOT NULL,
-        phone TEXT,
-        status TEXT DEFAULT 'new',
-        created_at TIMESTAMPTZ DEFAULT NOW()
-      )
-    `);
+    const { error: messagesError } = await supabase.rpc('execute_sql', {
+      sql_query: `
+        CREATE TABLE IF NOT EXISTS contact_messages (
+          id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+          name TEXT NOT NULL,
+          email TEXT NOT NULL,
+          subject TEXT,
+          message TEXT NOT NULL,
+          phone TEXT,
+          status TEXT DEFAULT 'new',
+          created_at TIMESTAMPTZ DEFAULT NOW()
+        )
+      `
+    });
     
     if (messagesError) {
       console.error('Error creating contact_messages table:', messagesError);
@@ -58,15 +60,17 @@ async function createContactTablesDirectly() {
     }
     
     // Create contact_replies table
-    const { error: repliesError } = await supabase.query(`
-      CREATE TABLE IF NOT EXISTS contact_replies (
-        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-        message_id UUID REFERENCES contact_messages(id) ON DELETE CASCADE,
-        admin_name TEXT NOT NULL,
-        message TEXT NOT NULL,
-        created_at TIMESTAMPTZ DEFAULT NOW()
-      )
-    `);
+    const { error: repliesError } = await supabase.rpc('execute_sql', {
+      sql_query: `
+        CREATE TABLE IF NOT EXISTS contact_replies (
+          id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+          message_id UUID REFERENCES contact_messages(id) ON DELETE CASCADE,
+          admin_name TEXT NOT NULL,
+          message TEXT NOT NULL,
+          created_at TIMESTAMPTZ DEFAULT NOW()
+        )
+      `
+    });
     
     if (repliesError) {
       console.error('Error creating contact_replies table:', repliesError);
