@@ -44,18 +44,18 @@ const OurStory = () => {
             />
           </div>
           <div className="animate-slide-up">
-            <h2 className="text-3xl font-bold mb-6 font-playfair">The JourneyGlow <span className="text-travel-gold">Beginning</span></h2>
+            <h2 className="text-3xl font-bold mb-6 font-playfair">Welcome to <span className="text-travel-gold"> Seeta Narayan Travels </span></h2>
             <p className="text-lg text-muted-foreground mb-6">
-              Founded in 2005 by Emma and Daniel Richards, JourneyGlow was born from a shared passion for travel and a vision to create a travel agency that goes beyond booking flights and hotels.
+            We're a Rudraprayag-based travel company, right in the heart of Uttarakhand, offering reliable and affordable travel solutions tailored to your needs. Whether you're planning the sacred Char Dham Yatra, a trekking adventure, or an educational tour, we’re here to make your journey unforgettable.
             </p>
             <p className="text-lg text-muted-foreground mb-6">
-              After years of exploring over 60 countries across all seven continents, Emma and Daniel realized that the most memorable travel experiences were those that connected them deeply with the local culture, people, and places.
+            At Seeta Narayan Travels, we don’t just see you as a tourist — to us, you're a guest, and we treat you with the warmth and care we would extend to a friend or family member. We understand the importance of your beliefs and traditions and strive to make your trip comfortable, respectful, and truly meaningful.
             </p>
             <p className="text-lg text-muted-foreground mb-6">
-              They set out to build a team of passionate travel experts who share their philosophy that true luxury isn't about opulence, but about authentic, meaningful experiences tailored to each traveler's unique interests and desires.
+            We’re here not only to take you places but also to suggest thoughtful travel ideas to enrich your experience. From start to finish, we personally monitor every tour to ensure everything runs smoothly — because your safety, comfort, and satisfaction genuinely matter to us.
             </p>
             <p className="text-lg text-muted-foreground">
-              Today, JourneyGlow has grown into a globally recognized travel agency, but our core values remain unchanged: creating personalized journeys that illuminate the world's beauty and transform how our clients experience it.
+            Let us be a part of your journey and help you create memories that last a lifetime.
             </p>
           </div>
         </div>

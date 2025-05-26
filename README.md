@@ -1,73 +1,152 @@
-# Welcome to your Lovable project
+## Documentation for Developers
 
-## Project info
+This documentation is intended for developers who want to contribute to this project. It provides an overview of the project structure, key components, and how to get started.
 
-**URL**: https://lovable.dev/projects/456254d7-1372-472d-a37b-dce333c75c81
+### Table of Contents
 
-## How can I edit this code?
+*   Getting Started
+    *   Prerequisites
+    *   Installation
+    *   Running the Development Server
+    *   Building for Production
+*   Project Structure
+*   Core Components
+    *   `src/App.tsx`
+    *   `src/lib/utils.ts`
+    *   `src/components/Layout.tsx`
+    *   ... (Document other core components)
+*   Pages
+    *   `src/pages/Home.tsx`
+    *   `src/pages/About.tsx`
+    *   ... (Document each page)
+*   Components
+    *   UI Components (`src/components/ui/`)
+    *   Feature Components (`src/components/`)
+    *   Admin Components (`src/components/admin/`)
+    *   ... (Document other component categories)
+*   Contexts
+*   Hooks
+*   Utilities
+*   Integrations
+    *   Supabase
+*   Tutorials
+    *   Tutorial 1: Setting up your Development Environment
+    *   Tutorial 2: Adding a New Page
+    *   Tutorial 3: Using a UI Component
+    *   ... (Add more tutorials)
+*   Contributing
+*   License
 
-There are several ways of editing your application.
+### Project Structure
 
-**Use Lovable**
+The project follows a standard React application structure with the following main directories:
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/456254d7-1372-472d-a37b-dce333c75c81) and start prompting.
+*   `public/`: Contains static assets like images, manifest file, and service worker.
+*   `src/`: Contains the main application code.
+    *   `components/`: Reusable React components.
+    *   `contexts/`: React contexts for managing global state.
+    *   `hooks/`: Custom React hooks.
+    *   `lib/`: Utility functions.
+    *   `pages/`: Components representing different pages of the application.
+    *   `utils/`: Additional utility functions and helpers.
+    *   `integrations/`: Code for integrating with external services (e.g., Supabase).
+*   `supabase/`: Supabase configuration and migration files.
 
-Changes made via Lovable will be committed automatically to this repo.
+### Core Components
 
-**Use your preferred IDE**
+#### `src/App.tsx`
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+This is the main entry point of the application. It sets up the routing using `react-router-dom` and wraps the application with necessary providers like `AuthProvider` and `ThemeProvider`.
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+*   **Purpose:** Defines the main application structure, routing, and global providers.
+*   **Key Features:**
+    *   Uses `BrowserRouter` for client-side routing.
+    *   Defines public and protected routes using `PublicRoute` and `ProtectedRoute`.
+    *   Includes an `ErrorBoundary` for handling errors gracefully.
+    *   Integrates `ThemeProvider` for managing themes.
+    *   Includes `Toaster` for displaying notifications.
+    *   Implements lazy loading for some pages using `Suspense` and `lazy`.
+    *   Includes `SecurityHeaders` and `OfflineBanner` components.
+*   **Usage:** This component is the root of the application and is rendered in `src/main.tsx`. You typically don't modify this file unless you need to add new routes, providers, or change the overall application structure.
 
-Follow these steps:
+#### `src/lib/utils.ts`
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+This file contains a collection of utility functions used across the project.
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+*   **Purpose:** Provides reusable helper functions to avoid code duplication and improve maintainability.
+*   **Functions:**
+    *   `cn(...inputs: ClassValue[]): string`: A helper function for conditionally joining CSS class names. It uses `clsx` and `tailwind-merge` to intelligently merge Tailwind CSS classes.
+*   **Usage:** Import and use the functions from this file in any component or module where they are needed.
 
-# Step 3: Install the necessary dependencies.
-npm i
+#### `src/components/Layout.tsx`
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+This component defines the main layout structure for most pages in the application.
+
+*   **Purpose:** Provides a consistent header, footer, and content area for pages.
+*   **Key Features:**
+    *   Includes the `Header` and `Footer` components.
+    *   Wraps the content with `PageTransition` for smooth page transitions.
+    *   Includes `SecurityHeaders`.
+    *   Adds playful animations on page scroll and a custom cursor effect (for desktop).
+    *   Uses `useIsMobile` hook to conditionally apply effects.
+*   **Usage:** Wrap the content of your pages with the `Layout` component to apply the standard layout.
+
+### Tutorials
+
+#### Tutorial 2: Adding a New Page
+
+This tutorial guides you through the process of adding a new page to the application.
+
+**Steps:**
+
+1.  **Create a new page component:**
+    *   In the `src/pages/` directory, create a new file for your page component (e.g., `src/pages/NewPage.tsx`).
+    *   Define a React component in this file.
 ```
+typescript
+    import React from 'react';
 
-**Edit a file directly in GitHub**
+    const NewPage = () => {
+      return (
+        <div>
+          <h1>This is the new page</h1>
+          <p>Content for the new page goes here.</p>
+        </div>
+      );
+    };
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+    export default NewPage;
+    
+```
+2.  **Add a new route in `src/App.tsx`:**
+    *   Open `src/App.tsx`.
+    *   Import your new page component.
+    *   Add a new `Route` for your page within the main `Routes` component. Choose a path for your new page (e.g., `/new-page`).
+```
+typescript
+    // ... imports
+    import NewPage from './pages/NewPage'; // Import your new page component
+    // ...
 
-**Use GitHub Codespaces**
+    function App() {
+      return (
+        {/* ... existing code ... */}
+                <Route path="/new-page" element={<Layout><NewPage /></Layout>} /> {/* Add the new route */}
+        {/* ... existing code ... */}
+      );
+    }
+    
+```
+3.  **Add a link to the new page (optional):**
+    *   If you want to navigate to your new page from another part of the application (e.g., the header or footer), add a link using the `Link` component from `react-router-dom`.
+```
+typescript
+    import { Link } from 'react-router-dom';
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/456254d7-1372-472d-a37b-dce333c75c81) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+    // ... in your Header or Footer component ...
+    <Link to="/new-page">New Page</Link>
+    
+```
+4.  **Test your new page:**
+    *   Run the development server (`bun dev`).
+    *   Navigate to the path you defined for your new page (e.g., `http://localhost:3000/new-page`).
